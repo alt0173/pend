@@ -204,27 +204,23 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
           ui.horizontal(|ui| {
             // Back page (CHAPTER) button
             if ui.button("\u{2190}").clicked() && book.get_current_page() > 0 {
-              book.set_current_page(book.get_current_page() - 1).unwrap();
+              state.chapter_number -= 1;
             }
             // Page (CHAPTER) navigation thing
-            let mut page_number = book.get_current_page();
             ui.add(
-              DragValue::new(&mut page_number)
+              DragValue::new(&mut state.chapter_number)
                 .max_decimals(0)
                 .clamp_range(0..=book.get_num_pages() - 1),
             );
-            if book.get_current_page() != page_number {
-              book.set_current_page(page_number).unwrap()
-            }
-            // Forward page (CHAPTER) button
-            if ui.button("\u{2192}").clicked() {
-              book
-                .set_current_page(
-                  (book.get_current_page() + 1).min(book.get_num_pages() - 1),
-                )
-                .unwrap();
-            }
-          });
+						// Forward page (CHAPTER) button
+						if ui.button("\u{2192}").clicked() && book.get_current_page() < book.get_num_pages() - 1 {
+							state.chapter_number += 1;
+						}
+						// Apply page / chapter change of needed
+						if book.get_current_page() != state.chapter_number {
+							book.set_current_page(state.chapter_number).unwrap()
+						}
+					});
 
           ui.separator();
 

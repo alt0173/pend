@@ -27,6 +27,8 @@ pub struct MyApp {
 	#[serde(skip_deserializing)]
   selected_book: Option<EpubDoc<File>>,
 	selected_book_path: Option<PathBuf>,
+	chapter_number: usize,
+	page_number: usize,
   book_style: BookTextStyle,
   remember_layout: bool,
 }
@@ -45,6 +47,8 @@ impl Default for MyApp {
       book_covers: HashMap::new(),
       selected_book: None,
 			selected_book_path: None,
+			chapter_number: 0,
+			page_number: 0,
       book_style: BookTextStyle {
         font_id: FontId::monospace(30.0),
         font_color: Color32::BLACK,
