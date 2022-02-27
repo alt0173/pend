@@ -1,0 +1,19 @@
+[package]
+name = "lisci"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+eframe = "0.17.0" # GUI
+egui = {version = "0.17.0", features = ["serialize"]}
+egui_extras = { version = "0.17.0", features = ["image"]} # Extra stuff for the GUI (Nicer images)
+image = { version = "*", features = ["jpeg"]} # Also for loading images
+glob = "0.3.0" # Search for files
+epub = "1.2.3" # Deal with epubs
+regex = "*" # :|
+serde = { version = "1.0.136", features = ["derive"] }
+
+[features]
+default = ["eframe/persistence"]
