@@ -43,7 +43,7 @@ pub struct BookTextStyle {
 }
 
 // Note: Only supports
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialOrd)]
 pub struct Note {
   chapter: u16,
   line: u16,
@@ -55,6 +55,24 @@ impl PartialEq for Note {
   fn eq(&self, other: &Self) -> bool {
     self.chapter == other.chapter && self.line == other.line
   }
+}
+
+impl Ord for Note {
+	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+		if self.chapter > other.chapter {
+			std::cmp::Ordering::Greater
+		} else if self.chapter < other.chapter {
+			std::cmp::Ordering::Less
+		} else {
+			if self.line > other.line {
+				std::cmp::Ordering::Greater
+			} else if self.line < other.line {
+				std::cmp::Ordering::Less
+			} else {
+				std::cmp::Ordering::Equal
+			}
+		}
+	}
 }
 
 impl Note {
@@ -285,6 +303,16 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
           PanelState::Notes => {
 						if let Some(path) = &state.selected_book_path {
 							if let Some(notes) = state.notes.get_mut(path) {
+								ui.horizontal(|ui| {
+									if ui.button("Sort Notes").clicked() {
+										notes.sort();
+									}
+									if ui.button("Clear Notes").clicked() {
+										notes.clear();
+									}
+								});
+								ui.separator();
+
 								for (index, note) in notes.clone().iter_mut().enumerate() {
 									let (chapter, line, content) = (note.chapter, note.line, &mut note.content);
 
