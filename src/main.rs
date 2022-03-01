@@ -3,34 +3,33 @@
 mod backend;
 mod ui;
 
-use std::{collections::HashMap, fs::File, path::PathBuf};
+use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 
 use eframe::{
-  egui::{self, style::WidgetVisuals, FontDefinitions, Layout},
-  epaint::{Color32, FontFamily, FontId, Rounding},
+  egui::{self, style::WidgetVisuals, FontDefinitions},
+  epaint::{FontFamily, Rounding},
   epi, run_native, NativeOptions,
 };
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
-use serde::{Serialize, Deserialize};
-use ui::{main_ui, BookTextStyle, PanelState, UIState, PageLayout};
+use serde::{Deserialize, Serialize};
+use ui::{main_ui, BookTextStyle, Note, PanelState, UIState};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
   ui_state: UIState,
   library: Vec<PathBuf>,
   library_path: String,
-	#[serde(skip_serializing)]
-	#[serde(skip_deserializing)]
-	book_covers: HashMap<String, RetainedImage>,
-	#[serde(skip_serializing)]
-	#[serde(skip_deserializing)]
+  #[serde(skip_serializing)]
+  #[serde(skip_deserializing)]
+  book_covers: HashMap<String, RetainedImage>,
+  #[serde(skip_serializing)]
+  #[serde(skip_deserializing)]
   selected_book: Option<EpubDoc<File>>,
-	selected_book_path: Option<PathBuf>,
-	chapter_number: usize,
-	page_number: usize,
+  selected_book_path: Option<PathBuf>,
+  chapter_number: usize,
   book_style: BookTextStyle,
-  remember_layout: bool,
+  notes: HashMap<PathBuf, Vec<Note>>,
 }
 
 impl Default for MyApp {
@@ -46,17 +45,14 @@ impl Default for MyApp {
       library_path: "./library".into(),
       book_covers: HashMap::new(),
       selected_book: None,
-			selected_book_path: None,
-			chapter_number: 0,
-			page_number: 0,
+      selected_book_path: None,
+      chapter_number: 0,
       book_style: BookTextStyle {
-        font_id: FontId::monospace(30.0),
-        font_color: Color32::BLACK,
-        bg_color: Color32::YELLOW,
-        line_spacing: 2.0,
-        text_layout: PageLayout::RightToLeft,
+        font_family: FontFamily::Name("Merriweather".into()),
+        line_spacing_multiplier: 2.0,
+        ..Default::default()
       },
-      remember_layout: true,
+      notes: HashMap::new(),
     }
   }
 }
@@ -68,10 +64,11 @@ impl epi::App for MyApp {
     _frame: &epi::Frame,
     _storage: Option<&dyn epi::Storage>,
   ) {
-		if let Some(storage) = _storage {
-			*self = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
-			println!("LOADED LIBRARY {:#?}", self.library);
-		}
+    // Load memory
+    #[cfg(not(debug_assertions))]
+    if let Some(storage) = _storage {
+      *self = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
+    }
 
     // Configure egui
     ctx.set_style(egui::Style {
@@ -127,9 +124,16 @@ impl epi::App for MyApp {
     let mut fonts = FontDefinitions::default();
 
     fonts.font_data.insert(
-      "work_medium".into(),
+      "work_sans".into(),
       egui::FontData::from_static(include_bytes!(
         "../compiletime_resources/WorkSans-Medium.ttf"
+      )),
+    );
+
+    fonts.font_data.insert(
+      "merriweather_regular".into(),
+      egui::FontData::from_static(include_bytes!(
+        "../compiletime_resources/Merriweather-Regular.ttf"
       )),
     );
 
@@ -137,45 +141,52 @@ impl epi::App for MyApp {
       .families
       .entry(eframe::epaint::FontFamily::Proportional)
       .or_default()
-      .insert(0, "work_medium".into());
+      .insert(0, "work_sans".into());
+
+    fonts
+      .families
+      .entry(FontFamily::Name(Arc::from("Merriweather")))
+      .or_default()
+      .insert(0, "merriweather_regular".into());
 
     ctx.set_fonts(fonts);
 
-		// Some fields of the program state do not support (de)serialization, so they must be rebuilt manually
-		// Loads selected book
-		if let Some(path) = &self.selected_book_path {
-			self.selected_book = Some(EpubDoc::new(path).unwrap());
-		}
+    // Some fields of the program state do not support (de)serialization, so they must be rebuilt manually
+    // Loads selected book
+    if let Some(path) = &self.selected_book_path {
+      if let Ok(doc) = EpubDoc::new(path) {
+        self.selected_book = Some(doc);
+      };
+    }
 
-		// Loads book covers
-		for path in &self.library {
-			let mut doc = EpubDoc::new(path).unwrap();
-			let title = doc.mdata("title").unwrap();
+    // Loads book covers
+    for path in &self.library {
+      if let Ok(mut doc) = EpubDoc::new(path) {
+        let title = doc.mdata("title").unwrap();
 
-			if doc.get_cover().is_ok() {
-				let cover = doc.get_cover().unwrap();
-				let cover =
-					RetainedImage::from_image_bytes(&title, &cover).unwrap();
+        if doc.get_cover().is_ok() {
+          let cover = doc.get_cover().unwrap();
+          let cover = RetainedImage::from_image_bytes(&title, &cover).unwrap();
 
-				self.book_covers.insert(title, cover);
-			}
-		}
+          self.book_covers.insert(title, cover);
+        }
+      }
+    }
   }
 
   fn update(&mut self, ctx: &egui::Context, _frame: &epi::Frame) {
     main_ui(ctx, self);
   }
 
-	fn save(&mut self, storage: &mut dyn epi::Storage) {
-		epi::set_value(storage, epi::APP_KEY, self);
-		println!("SAVED LIBRARY: {:#?}", self.library);
-	}
+  fn save(&mut self, storage: &mut dyn epi::Storage) {
+    epi::set_value(storage, epi::APP_KEY, self);
+  }
 
-	// Name of the process
+  // Name of the process
   fn name(&self) -> &str {
     "Lisci"
   }
-	// Prevents single instance of un-layedout text
+  // Prevents single instance of un-layedout text
   fn warm_up_enabled(&self) -> bool {
     true
   }

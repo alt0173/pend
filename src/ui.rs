@@ -1,16 +1,16 @@
+use std::sync::Arc;
+
 use eframe::{
   egui::{
-    self, ComboBox, Context, Direction, DragValue, Layout, RichText, ScrollArea,
-    TextEdit, TextStyle,
+    self, ComboBox, Context, DragValue, RichText, ScrollArea, TextEdit, TextStyle,
   },
   epaint::{vec2, Color32, FontId},
 };
-use egui_extras::RetainedImage;
+use egui::{FontFamily, Label, Sense};
 use epub::doc::EpubDoc;
-use glob::glob;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{backend::parse_calibre, MyApp};
+use crate::{backend::{parse_calibre, load_library}, MyApp};
 
 #[derive(Serialize, Deserialize)]
 pub struct UIState {
@@ -31,25 +31,109 @@ pub enum PanelState {
 
 #[derive(Serialize, Deserialize)]
 pub struct BookTextStyle {
-  pub font_id: FontId,
+  pub font_size: f32,
+  pub font_family: FontFamily,
   pub font_color: Color32,
   pub bg_color: Color32,
-  pub line_spacing: f32,
+  pub line_spacing_multiplier: f32,
   pub text_layout: PageLayout,
+}
+
+// Note: Only supports
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Note {
+  chapter: u16,
+  line: u16,
+  content: String,
+}
+
+// Slightly modified partialeq that disregards content
+impl PartialEq for Note {
+  fn eq(&self, other: &Self) -> bool {
+    self.chapter == other.chapter && self.line == other.line
+  }
+}
+
+impl Note {
+  pub fn new(chapter: u16, line: u16) -> Self {
+    Self {
+      chapter,
+      line,
+      content: String::new(),
+    }
+  }
+}
+
+impl Default for BookTextStyle {
+  fn default() -> Self {
+    Self {
+      font_size: 22.0,
+      font_family: FontFamily::Monospace,
+      font_color: Color32::BLACK,
+      bg_color: Color32::from_rgb(239, 229, 213),
+      line_spacing_multiplier: 0.0,
+      text_layout: PageLayout::LeftToRight,
+    }
+  }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum PageLayout {
-	RightToLeft,
-	LeftToRight,
-	Centered
+  RightToLeft,
+  LeftToRight,
+  Centered,
 }
 
 pub fn main_ui(ctx: &Context, state: &mut MyApp) {
   egui::Area::new("Container").movable(false).show(ctx, |ui| {
     let area_width = ui.available_width();
+		let area_height = ui.available_height();
     let mut left_panel_width = 0.0;
 
+		// Popups
+  	if state.ui_state.display_ofl_popup {
+    egui::Window::new("Acknowledgements")
+			.title_bar(false)
+			.resizable(false)
+			.fixed_size(vec2(area_height / 2.0, area_height / 2.0))
+			.show(ctx, |ui| {
+
+				if ui.button("Close Menu").clicked() {
+					state.ui_state.display_ofl_popup = false;
+				}
+
+				ui.vertical_centered(|ui| {
+					ui.heading("FONTS");
+				});
+				ui.label("In an effort to make this program more portable and accessible, the font files used have been included in the binary.");
+				ui.label("A copy of the Open Font License (OFL) is available at the bottom of this menu.");
+				ui.collapsing("Work Sans", |ui| {
+					ui.label("Work Sans is a font licensed under version 1.1 of the OFL");
+					ui.hyperlink("https://github.com/weiweihuanghuang/Work-Sans");
+				});
+				ui.collapsing("Merriweather", |ui| {
+					ui.label("Merriweather is a font licensed under version 1.1 of the OFL");
+					ui.hyperlink("https://github.com/SorkinType/Merriweather");
+				});
+
+				ui.separator();
+
+				ui.collapsing("Open Font License Version 1.1", |ui| {
+					ScrollArea::new([true; 2])
+						.max_height(area_height / 2.0)
+						.max_width(area_height / 2.0)
+						.show(ui, |ui| {
+							ui.horizontal_wrapped(|ui| {
+								ui.label(
+									RichText::new(String::from_utf8(include_bytes!("../compiletime_resources/OFL_1.1.txt")	.to_vec()).expect("Failed to locate OFL v1.1")).monospace()
+								);
+							});
+						});
+				})
+			});
+  }
+
+		// Panels
     egui::SidePanel::left("Left Panel")
       .resizable(true)
       .width_range(area_width / 3.0..=area_width / 1.5)
@@ -61,15 +145,15 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
             "Library",
           );
           ui.selectable_value(
-            &mut state.ui_state.left_panel_state,
-            PanelState::Info,
-            "Info",
-          );
-          ui.selectable_value(
-            &mut state.ui_state.left_panel_state,
+						&mut state.ui_state.left_panel_state,
             PanelState::Notes,
             "Notes",
           );
+					ui.selectable_value(
+						&mut state.ui_state.left_panel_state,
+						PanelState::Info,
+						"Info",
+					);
 
           ui.with_layout(egui::Layout::right_to_left(), |ui| {
             ui.selectable_value(
@@ -91,13 +175,23 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                   .hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
                   .show(ui);
               });
-
-              ui.checkbox(&mut state.remember_layout, "Restore Layout on Startup");
             });
 
-            ui.collapsing("Book Content", |ui| {
+            ui.collapsing("Book Contents", |ui| {
+							ComboBox::from_label("Book Font")
+							.selected_text(match &state.book_style.font_family {
+								f if f == &FontFamily::Proportional => "Work Sans",
+								f if f == &FontFamily::Name(Arc::from("Merriweather"))  => "Merriweather",
+								_ => "Unrecognized Font"
+							})
+							.show_ui(ui, |ui| {
+								ui.selectable_value(&mut state.book_style.font_family, FontFamily::Proportional, "Work Sans");
+								ui.selectable_value(&mut state.book_style.font_family, FontFamily::Name("Merriweather".into()), "Merriweather");
+							});
+
+							// Reading direction selection
               ComboBox::from_label("Text Alignment")
-								.selected_text(format!("{:?}", state.book_style.text_layout))
+                .selected_text(format!("{:?}", state.book_style.text_layout))
                 .show_ui(ui, |ui| {
                   ui.selectable_value(
                     &mut state.book_style.text_layout,
@@ -115,46 +209,41 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                     "Centered",
                   );
                 });
+
+              ui.add(
+                egui::Slider::new(&mut state.book_style.font_size, 12.0..=120.0)
+									.step_by(0.25)
+                  .prefix("Text Size: ")
+              );
+
+							ui.add(
+								egui::Slider::new(&mut state.book_style.line_spacing_multiplier, 0.0..=6.0)
+									.step_by(0.25)
+									.prefix("Line Spacing: ")
+							);
+
+							if ui.button("Reset Style").clicked() {
+								state.book_style = BookTextStyle::default();
+							}
             });
 
             ui.collapsing("Other", |ui| {
               if ui.button("Acknowledgements").clicked() {
                 state.ui_state.display_ofl_popup = true;
               }
-              ui.checkbox(&mut state.ui_state.display_raw_text, "Display Raw Text");
+              ui.checkbox(&mut state.ui_state.display_raw_text, "[DEBUG] Display Raw Text");
             });
           }
           PanelState::Library => {
             ui.horizontal(|ui| {
               if ui.button("Load Library").clicked() {
-                // Finds all epub files in the user's library directory
-                for file_path in glob(&format!("{}/**/*.epub", state.library_path))
-                  .unwrap()
-                  .flatten()
-                {
-                  // Add file to library if not already added
-                  if !state.library.contains(&file_path) {
-                    state.library.push(file_path.clone());
-										println!("{:?}", &file_path);
-                  }
-                  // Same thing for the book cover
-                  let mut doc = EpubDoc::new(file_path).unwrap();
-                  let title = doc.mdata("title").unwrap();
-
-                  if doc.get_cover().is_ok() {
-                    let cover = doc.get_cover().unwrap();
-                    let cover =
-                      RetainedImage::from_image_bytes(&title, &cover).unwrap();
-
-                    state.book_covers.insert(title, cover);
-                  }
-                }
+								load_library(state);
               }
               if ui.button("Clear Library").clicked() {
                 state.library.clear();
                 state.book_covers.clear();
                 state.selected_book = None;
-								state.selected_book_path = None;
+                state.selected_book_path = None;
               }
             });
             ui.separator();
@@ -162,23 +251,27 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
             egui::Grid::new("Library Shelf Thing")
               .striped(true)
               .show(ui, |ui| {
-                let h = ui.available_height() / 6.0;
+                let y = ui.available_height() / 6.0;
 
                 for book in state.library.iter() {
-                  if let Some(title) = EpubDoc::new(book).unwrap().mdata("title") {
-                    ui.vertical_centered(|ui| {
-                      if ui
-                        .add(egui::ImageButton::new(
-                          state.book_covers.get(&title).unwrap().texture_id(ctx),
-                          vec2(h * 50.0, h * 80.0),
-                        ))
-                        .clicked()
-                      {
-                        state.selected_book = Some(EpubDoc::new(book).unwrap());
-												state.selected_book_path = Some(book.clone());
-                      }
-                      ui.label(RichText::new(title).text_style(TextStyle::Body));
-                    });
+                  if let Ok(doc) = EpubDoc::new(book) {
+                    if let Some(title) = doc.mdata("title") {
+                      ui.vertical_centered(|ui| {
+                        if ui
+                          .add(egui::ImageButton::new(
+                            state.book_covers.get(&title).unwrap().texture_id(ctx),
+                            vec2(y * 50.0, y * 80.0),
+                          ))
+                          .clicked()
+                          && state.selected_book_path != Some(book.to_path_buf())
+                        {
+                          state.selected_book = Some(EpubDoc::new(book).unwrap());
+                          state.selected_book_path = Some(book.clone());
+                          state.chapter_number = 0;
+                        }
+                        ui.label(RichText::new(title).text_style(TextStyle::Body));
+                      });
+                    }
                   }
                 }
               });
@@ -187,7 +280,33 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
             ui.label("Info");
           }
           PanelState::Notes => {
-            ui.label("Notes");
+						if let Some(path) = &state.selected_book_path {
+							if let Some(notes) = state.notes.get_mut(path) {
+								for (index, note) in notes.clone().iter_mut().enumerate() {
+									let (chapter, line, content) = (note.chapter, note.line, &mut note.content);
+
+									ui.horizontal(|ui| {
+										let response = ui.collapsing(format!("Ch. {}, line: {}", chapter, line), |ui| {
+											TextEdit::multiline(content)
+												.show(ui);
+										});
+
+										if response.body_response.is_none() {
+											if ui.button("Goto").clicked() {
+												state.chapter_number = note.chapter as usize;
+											}
+											if ui.button("Remove Note").clicked() {
+												notes.remove(index);
+											}
+										}
+									});
+								}
+							} else {
+								ui.label("No notes detected.");
+							}
+						} else {
+							ui.label("No Book Selected");
+						}
           }
           PanelState::Reader => {
             panic!("This shouldn't happen");
@@ -212,15 +331,17 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                 .max_decimals(0)
                 .clamp_range(0..=book.get_num_pages() - 1),
             );
-						// Forward page (CHAPTER) button
-						if ui.button("\u{2192}").clicked() && book.get_current_page() < book.get_num_pages() - 1 {
-							state.chapter_number += 1;
-						}
-						// Apply page / chapter change of needed
-						if book.get_current_page() != state.chapter_number {
-							book.set_current_page(state.chapter_number).unwrap()
-						}
-					});
+            // Forward page (CHAPTER) button
+            if ui.button("\u{2192}").clicked()
+              && book.get_current_page() < book.get_num_pages() - 1
+            {
+              state.chapter_number += 1;
+            }
+            // Apply page / chapter change of needed
+            if book.get_current_page() != state.chapter_number {
+              book.set_current_page(state.chapter_number).unwrap()
+            }
+          });
 
           ui.separator();
 
@@ -232,22 +353,44 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
               if state.ui_state.display_raw_text {
                 ui.label(&book.get_current_str().unwrap());
               } else {
-                // Layout (rtl, ltr, etc.)
-                // ui.with_layout(Layout::with_main_wrap(Layout::left_to_right(), true), |ui| {
-                ui.horizontal_wrapped(|ui| {
-                  let style = &state.book_style;
+                let style = &state.book_style;
+                let contents = parse_calibre(&book.get_current_str().unwrap());
+                let contents: Vec<&str> = contents.lines().collect();
 
-                  // Background
-                  ui.painter()
-                    .rect_filled(ui.clip_rect(), 0.0, style.bg_color);
+                // Background
+                ui.painter()
+                  .rect_filled(ui.clip_rect(), 0.0, style.bg_color);
 
-                  // Contents
-                  let text =
-                    RichText::new(&parse_calibre(&book.get_current_str().unwrap()))
-                      .color(style.font_color)
-                      .font(style.font_id.clone());
+								// Actual "stuff"
+                ui.vertical(|ui| {
+									let font_id = FontId::new(style.font_size, style.font_family.clone());
+									let line_spacing = ui.fonts().row_height(&font_id) * style.line_spacing_multiplier;
 
-                  ui.label(text);
+                  ui.style_mut().spacing.item_spacing.y = line_spacing;
+
+                  for (line_number, line) in contents.into_iter().enumerate() {
+										let response = ui.add(Label::new(
+											RichText::new(line)
+											.color(style.font_color)
+											.font(font_id.clone())
+										).sense(Sense::click()));
+
+										response.context_menu(|ui| {
+
+											if ui.button("Add Note").clicked() {
+												let notes = state.notes.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap();
+												let note = Note::new(book.get_current_page() as u16, line_number as u16);
+
+												// Adds the note if one is not already in place for the specified chapter / line combo
+												if !notes.contains(&note) {
+													notes.push(note);
+													state.ui_state.left_panel_state = PanelState::Notes;
+
+													ui.close_menu();
+												}
+											}
+										});
+                  }
                 });
               }
             });
@@ -259,25 +402,4 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
       }
     });
   });
-
-  // Popups, etc.
-  if state.ui_state.display_ofl_popup {
-    egui::Window::new("Acknowledgement Popup")
-			.title_bar(false)
-			.show(ctx, |ui| {
-				if ui.button("Close Menu").clicked() {
-					state.ui_state.display_ofl_popup = false;
-				}
-
-				ui.vertical_centered(|ui| {
-					ui.heading("FONTS");
-				});
-				ui.label("In an effort to make this program more portable and accessible, the font files used have been included in the binary.");
-				ui.collapsing("Work Sans", |ui| {
-					ui.label("Work Sans is a font licensed under version 1.1 of the OFL");
-					ui.hyperlink("https://scripts.sil.org/OFL");
-					ui.hyperlink("https://github.com/weiweihuanghuang/Work-Sans");
-				});
-			});
-  }
 }
