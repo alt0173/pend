@@ -10,7 +10,10 @@ use egui::{FontFamily, Label, Sense};
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
 
-use crate::{backend::{parse_calibre, load_library}, MyApp};
+use crate::{
+  backend::{load_library, parse_calibre},
+  MyApp,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct UIState {
@@ -292,8 +295,8 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 										});
 
 										if response.body_response.is_none() {
-											if ui.button("Goto").clicked() {
-												state.chapter_number = note.chapter as usize;
+											if ui.button("Go to").clicked() {
+												state.goto_target = Some(Note::new(chapter, line));
 											}
 											if ui.button("Remove Note").clicked() {
 												notes.remove(index);
@@ -320,6 +323,10 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
       if state.ui_state.right_panel_state == PanelState::Reader {
         // Displays page(s) of the book
         if let Some(book) = &mut state.selected_book {
+					if let Some(target) = &state.goto_target {
+						state.chapter_number = target.chapter as usize;
+					}
+
           ui.horizontal(|ui| {
             // Back page (CHAPTER) button
             if ui.button("\u{2190}").clicked() && book.get_current_page() > 0 {
@@ -368,6 +375,8 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 
                   ui.style_mut().spacing.item_spacing.y = line_spacing;
 
+									let mut goto_target_response = None;
+
                   for (line_number, line) in contents.into_iter().enumerate() {
 										let response = ui.add(Label::new(
 											RichText::new(line)
@@ -375,8 +384,14 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 											.font(font_id.clone())
 										).sense(Sense::click()));
 
-										response.context_menu(|ui| {
+										if let Some(target) = &state.goto_target {
+											if line_number == target.line as usize {
+												goto_target_response = Some(response.clone());
+											}
+										}
 
+										// Context menu
+										response.context_menu(|ui| {
 											if ui.button("Add Note").clicked() {
 												let notes = state.notes.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap();
 												let note = Note::new(book.get_current_page() as u16, line_number as u16);
@@ -390,7 +405,14 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 												}
 											}
 										});
+
                   }
+
+									if let Some(response) = goto_target_response {
+										response.scroll_to_me(Some(egui::Align::TOP));
+										state.goto_target = None;
+									}
+
                 });
               }
             });

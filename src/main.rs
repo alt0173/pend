@@ -30,6 +30,7 @@ pub struct MyApp {
   chapter_number: usize,
   book_style: BookTextStyle,
   notes: HashMap<PathBuf, Vec<Note>>,
+  goto_target: Option<Note>,
 }
 
 impl Default for MyApp {
@@ -53,6 +54,7 @@ impl Default for MyApp {
         ..Default::default()
       },
       notes: HashMap::new(),
+      goto_target: None,
     }
   }
 }
