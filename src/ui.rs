@@ -100,6 +100,19 @@ pub enum PageLayout {
   Centered,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ThemeInfo {
+	pub highlight_color: Color32,
+}
+
+impl Default for ThemeInfo {
+	fn default() -> Self {
+		Self {
+			highlight_color: Color32::YELLOW
+		}
+	}
+}
+
 pub fn main_ui(ctx: &Context, state: &mut MyApp) {
   egui::Area::new("Container").movable(false).show(ctx, |ui| {
     let area_width = ui.available_width();
@@ -191,6 +204,16 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                   .hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
                   .show(ui);
               });
+
+							ui.collapsing("Theme", |ui| {
+								ui.horizontal(|ui| {
+									ui.label("Highlight Color: ");
+									ui.color_edit_button_srgba(&mut state.theme.highlight_color);
+								});
+								if ui.button("Reset Theme").clicked() {
+									state.theme = ThemeInfo::default()
+								}
+							});
             });
 
             ui.collapsing("Book Contents", |ui| {
@@ -238,9 +261,18 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 									.prefix("Line Spacing: ")
 							);
 
-							if ui.button("Reset Style").clicked() {
-								state.book_style = BookTextStyle::default();
-							}
+							ui.separator();
+
+							ui.horizontal(|ui| {
+								if ui.button("Reset Style").clicked() {
+									state.book_style = BookTextStyle::default();
+								}
+								if ui.button("Clear Highlights").clicked() {
+									if let Some(path) = &state.selected_book_path {
+										state.book_userdata.get_mut(path).unwrap().highlights.clear();
+									}
+								}
+							});
             });
 
             ui.collapsing("Other", |ui| {
@@ -286,14 +318,14 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                           state.chapter_number = 0;
                         }
                         ui.label(RichText::new(title).text_style(TextStyle::Body));
+												if let Some(author) = doc.mdata("creator") {
+													ui.label(RichText::new(author).text_style(TextStyle::Body));
+												}
                       });
                     }
                   }
                 }
               });
-          }
-          PanelState::Info => {
-            ui.label("Info");
           }
           PanelState::Notes => {
 						if let Some(path) = &state.selected_book_path {
@@ -336,7 +368,10 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 							ui.label("No Book Selected");
 						}
           }
-          PanelState::Reader => {
+          PanelState::Info => {
+            ui.label("Info");
+          }
+					PanelState::Reader => {
             panic!("This shouldn't happen");
           }
         }
@@ -406,6 +441,15 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 										let response = ui.add(Label::new(
 											RichText::new(line)
 											.color(style.font_color)
+											.background_color(
+												if let Some(color) = state.book_userdata.get(
+													&state.selected_book_path.as_ref().unwrap().clone()).unwrap().highlights.get(&(state.chapter_number, line_number)
+												) {
+													color.clone()
+												} else {
+													Color32::TRANSPARENT
+												}
+											)
 											.font(font_id.clone())
 										).sense(Sense::click()));
 
@@ -417,6 +461,23 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 
 										// Context menu
 										response.context_menu(|ui| {
+											if ui.button("Highlight").clicked() {
+												let highlights = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().highlights;
+												let coord = (state.chapter_number, line_number);
+
+												if let Some(color) = highlights.get_mut(&coord) {
+													if *color != state.theme.highlight_color {
+														*color = state.theme.highlight_color;
+													} else {
+														highlights.remove(&coord);
+													};
+												} else {
+													highlights.insert(coord, state.theme.highlight_color);
+												}
+
+												ui.close_menu();
+											}
+
 											if ui.button("Add Note").clicked() {
 												let notes = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().notes;
 												let note = Note::new(book.get_current_page() as u16, line_number as u16);

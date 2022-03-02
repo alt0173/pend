@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use egui::Color32;
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use glob::glob;
@@ -10,11 +13,16 @@ use crate::{ui::Note, MyApp};
 #[derive(Serialize, Deserialize)]
 pub struct UserBookInfo {
   pub notes: Vec<Note>,
+  /// (Chapter, Line), Color of the highlight
+  pub highlights: HashMap<(usize, usize), Color32>,
 }
 
 impl UserBookInfo {
   pub fn new() -> Self {
-    Self { notes: Vec::new() }
+    Self {
+      notes: Vec::new(),
+      highlights: HashMap::new(),
+    }
   }
 }
 

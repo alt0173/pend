@@ -14,7 +14,7 @@ use eframe::{
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
-use ui::{main_ui, BookTextStyle, Note, PanelState, UIState};
+use ui::{main_ui, BookTextStyle, Note, PanelState, UIState, ThemeInfo};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
@@ -32,6 +32,7 @@ pub struct MyApp {
   book_style: BookTextStyle,
   book_userdata: HashMap<PathBuf, UserBookInfo>,
   goto_target: Option<Note>,
+	theme: ThemeInfo,
 }
 
 impl Default for MyApp {
@@ -51,11 +52,12 @@ impl Default for MyApp {
       chapter_number: 0,
       book_style: BookTextStyle {
         font_family: FontFamily::Name("Merriweather".into()),
-        line_spacing_multiplier: 2.0,
+        line_spacing_multiplier: 1.0,
         ..Default::default()
       },
       book_userdata: HashMap::new(),
       goto_target: None,
+			theme: ThemeInfo::default(),
     }
   }
 }
