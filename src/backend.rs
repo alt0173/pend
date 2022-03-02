@@ -2,8 +2,21 @@ use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use glob::glob;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
-use crate::MyApp;
+use crate::{ui::Note, MyApp};
+
+// Contains custom content a user creates for each book (notes, highlighted lines, etc.)
+#[derive(Serialize, Deserialize)]
+pub struct UserBookInfo {
+  pub notes: Vec<Note>,
+}
+
+impl UserBookInfo {
+  pub fn new() -> Self {
+    Self { notes: Vec::new() }
+  }
+}
 
 pub fn parse_calibre(input: &str) -> String {
   let mut output = String::new();
@@ -14,8 +27,8 @@ pub fn parse_calibre(input: &str) -> String {
     let processed = rx.replace_all(line, "");
     let processed = processed.trim();
 
-    if processed != "" {
-      output.push_str(&processed);
+    if !processed.is_empty() {
+      output.push_str(processed);
       output.push('\n');
     }
   }
@@ -45,9 +58,10 @@ pub fn load_library(state: &mut MyApp) {
       state.book_covers.insert(title, cover);
     }
 
-    // If the book in question does not have a vec of notes already: create one
-    if !state.notes.contains_key(&file_path) {
-      state.notes.insert(file_path, Vec::new());
-    }
+    // If the book in question does not have userdata already: create some
+    state
+      .book_userdata
+      .entry(file_path)
+      .or_insert_with(|| UserBookInfo::new());
   }
 }

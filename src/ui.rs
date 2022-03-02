@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{cmp::Ordering, sync::Arc};
 
 use eframe::{
   egui::{
@@ -42,7 +42,19 @@ pub struct BookTextStyle {
   pub text_layout: PageLayout,
 }
 
-// Note: Only supports
+impl Default for BookTextStyle {
+  fn default() -> Self {
+    Self {
+      font_size: 22.0,
+      font_family: FontFamily::Monospace,
+      font_color: Color32::BLACK,
+      bg_color: Color32::from_rgb(239, 229, 213),
+      line_spacing_multiplier: 0.0,
+      text_layout: PageLayout::LeftToRight,
+    }
+  }
+}
+// The PartiqlOrd derive may lead to issues?
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialOrd)]
 pub struct Note {
   chapter: u16,
@@ -58,21 +70,17 @@ impl PartialEq for Note {
 }
 
 impl Ord for Note {
-	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-		if self.chapter > other.chapter {
-			std::cmp::Ordering::Greater
-		} else if self.chapter < other.chapter {
-			std::cmp::Ordering::Less
-		} else {
-			if self.line > other.line {
-				std::cmp::Ordering::Greater
-			} else if self.line < other.line {
-				std::cmp::Ordering::Less
-			} else {
-				std::cmp::Ordering::Equal
-			}
-		}
-	}
+  fn cmp(&self, other: &Self) -> Ordering {
+    match self.chapter.cmp(&other.chapter) {
+      Ordering::Greater => Ordering::Greater,
+      Ordering::Less => Ordering::Less,
+      Ordering::Equal => match self.line.cmp(&other.line) {
+        Ordering::Greater => Ordering::Greater,
+        Ordering::Less => Ordering::Less,
+        Ordering::Equal => Ordering::Equal,
+      },
+    }
+  }
 }
 
 impl Note {
@@ -81,19 +89,6 @@ impl Note {
       chapter,
       line,
       content: String::new(),
-    }
-  }
-}
-
-impl Default for BookTextStyle {
-  fn default() -> Self {
-    Self {
-      font_size: 22.0,
-      font_family: FontFamily::Monospace,
-      font_color: Color32::BLACK,
-      bg_color: Color32::from_rgb(239, 229, 213),
-      line_spacing_multiplier: 0.0,
-      text_layout: PageLayout::LeftToRight,
     }
   }
 }
@@ -302,7 +297,9 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
           }
           PanelState::Notes => {
 						if let Some(path) = &state.selected_book_path {
-							if let Some(notes) = state.notes.get_mut(path) {
+							if let Some(book_info) = state.book_userdata.get_mut(path) {
+								let notes = &mut book_info.notes;
+
 								ui.horizontal(|ui| {
 									if ui.button("Sort Notes").clicked() {
 										notes.sort();
@@ -421,7 +418,7 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 										// Context menu
 										response.context_menu(|ui| {
 											if ui.button("Add Note").clicked() {
-												let notes = state.notes.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap();
+												let notes = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().notes;
 												let note = Note::new(book.get_current_page() as u16, line_number as u16);
 
 												// Adds the note if one is not already in place for the specified chapter / line combo

@@ -5,6 +5,7 @@ mod ui;
 
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 
+use backend::UserBookInfo;
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
   epaint::{FontFamily, Rounding},
@@ -29,7 +30,7 @@ pub struct MyApp {
   selected_book_path: Option<PathBuf>,
   chapter_number: usize,
   book_style: BookTextStyle,
-  notes: HashMap<PathBuf, Vec<Note>>,
+  book_userdata: HashMap<PathBuf, UserBookInfo>,
   goto_target: Option<Note>,
 }
 
@@ -53,7 +54,7 @@ impl Default for MyApp {
         line_spacing_multiplier: 2.0,
         ..Default::default()
       },
-      notes: HashMap::new(),
+      book_userdata: HashMap::new(),
       goto_target: None,
     }
   }
