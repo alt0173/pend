@@ -62,6 +62,6 @@ pub fn load_library(state: &mut MyApp) {
     state
       .book_userdata
       .entry(file_path)
-      .or_insert_with(|| UserBookInfo::new());
+      .or_insert_with(UserBookInfo::new);
   }
 }
