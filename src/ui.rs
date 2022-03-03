@@ -436,77 +436,74 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                   .rect_filled(ui.clip_rect(), 0.0, style.bg_color);
 
 								// Actual "stuff"
-                ui.vertical(|ui| {
-									let font_id = FontId::new(style.font_size, style.font_family.clone());
-									let line_spacing = ui.fonts().row_height(&font_id) * style.line_spacing_multiplier;
+								let font_id = FontId::new(style.font_size, style.font_family.clone());
+								let line_spacing = ui.fonts().row_height(&font_id) * style.line_spacing_multiplier;
 
-                  ui.style_mut().spacing.item_spacing.y = line_spacing;
+								ui.style_mut().spacing.item_spacing.y = line_spacing;
 
-									let mut goto_target_response = None;
+								let mut goto_target_response = None;
 
-                  for (line_number, line) in contents.into_iter().enumerate() {
-										let response = ui.add(Label::new(
-											RichText::new(line)
-											.color(style.font_color)
-											.background_color(
-												if let Some(color) = state.book_userdata.get(
-													&state.selected_book_path.as_ref().unwrap().clone()).unwrap().highlights.get(&(state.chapter_number, line_number)
-												) {
-													color.clone()
-												} else {
-													Color32::TRANSPARENT
-												}
-											)
-											.font(font_id.clone())
-										).sense(Sense::click()));
-
-										if let Some(target) = &state.goto_target {
-											if line_number == target.line as usize {
-												goto_target_response = Some(response.clone());
+								for (line_number, line) in contents.into_iter().enumerate() {
+									let response = ui.add(Label::new(
+										RichText::new(line)
+										.color(style.font_color)
+										.background_color(
+											if let Some(color) = state.book_userdata.get(
+												&state.selected_book_path.as_ref().unwrap().clone()).unwrap().highlights.get(&(state.chapter_number, line_number)
+											) {
+												color.clone()
+											} else {
+												Color32::TRANSPARENT
 											}
+										)
+										.font(font_id.clone())
+									).sense(Sense::click()));
+
+									if let Some(target) = &state.goto_target {
+										if line_number == target.line as usize {
+											goto_target_response = Some(response.clone());
+										}
+									}
+
+									// Context menu
+									response.context_menu(|ui| {
+										if ui.button("Highlight").clicked() {
+											let highlights = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().highlights;
+											let coord = (state.chapter_number, line_number);
+
+											if let Some(color) = highlights.get_mut(&coord) {
+												if *color != state.theme.highlight_color {
+													*color = state.theme.highlight_color;
+												} else {
+													highlights.remove(&coord);
+												};
+											} else {
+												highlights.insert(coord, state.theme.highlight_color);
+											}
+
+											ui.close_menu();
 										}
 
-										// Context menu
-										response.context_menu(|ui| {
-											if ui.button("Highlight").clicked() {
-												let highlights = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().highlights;
-												let coord = (state.chapter_number, line_number);
+										if ui.button("Add Note").clicked() {
+											let notes = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().notes;
+											let note = Note::new(book.get_current_page() as u16, line_number as u16);
 
-												if let Some(color) = highlights.get_mut(&coord) {
-													if *color != state.theme.highlight_color {
-														*color = state.theme.highlight_color;
-													} else {
-														highlights.remove(&coord);
-													};
-												} else {
-													highlights.insert(coord, state.theme.highlight_color);
-												}
+											// Adds the note if one is not already in place for the specified chapter / line combo
+											if !notes.contains(&note) {
+												notes.push(note);
+												state.ui_state.left_panel_state = PanelState::Notes;
 
 												ui.close_menu();
 											}
+										}
+									});
 
-											if ui.button("Add Note").clicked() {
-												let notes = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().notes;
-												let note = Note::new(book.get_current_page() as u16, line_number as u16);
+								}
 
-												// Adds the note if one is not already in place for the specified chapter / line combo
-												if !notes.contains(&note) {
-													notes.push(note);
-													state.ui_state.left_panel_state = PanelState::Notes;
-
-													ui.close_menu();
-												}
-											}
-										});
-
-                  }
-
-									if let Some(response) = goto_target_response {
+								if let Some(response) = goto_target_response {
 										response.scroll_to_me(Some(egui::Align::TOP));
 										state.goto_target = None;
 									}
-
-                });
               }
             });
         } else {
