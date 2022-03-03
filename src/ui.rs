@@ -36,8 +36,6 @@ pub enum PanelState {
 pub struct BookTextStyle {
   pub font_size: f32,
   pub font_family: FontFamily,
-  pub font_color: Color32,
-  pub bg_color: Color32,
   pub line_spacing_multiplier: f32,
 }
 
@@ -46,8 +44,6 @@ impl Default for BookTextStyle {
     Self {
       font_size: 22.0,
       font_family: FontFamily::Proportional,
-      font_color: Color32::BLACK,
-      bg_color: Color32::from_rgb(239, 229, 213),
       line_spacing_multiplier: 0.0,
     }
   }
@@ -93,14 +89,18 @@ impl Note {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ThemeInfo {
+pub struct DocumentColors {
   pub highlight_color: Color32,
+	pub text_color: Color32,
+	pub page_color: Color32,
 }
 
-impl Default for ThemeInfo {
+impl Default for DocumentColors {
   fn default() -> Self {
     Self {
       highlight_color: Color32::YELLOW,
+			text_color: Color32::BLACK,
+      page_color: Color32::from_rgb(239, 229, 213),
     }
   }
 }
@@ -196,20 +196,10 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                   .hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
                   .show(ui);
               });
-
-							ui.collapsing("Theme", |ui| {
-								ui.horizontal(|ui| {
-									ui.label("Highlight Color: ");
-									ui.color_edit_button_srgba(&mut state.theme.highlight_color);
-								});
-								if ui.button("Reset Theme").clicked() {
-									state.theme = ThemeInfo::default()
-								}
-							});
             });
 
-            ui.collapsing("Book Contents", |ui| {
-							ComboBox::from_label("Book Font")
+            ui.collapsing("Document", |ui| {
+							ComboBox::from_label("Font")
 							.selected_text(match &state.book_style.font_family {
 								f if f == &FontFamily::Proportional => "Work Sans",
 								f if f == &FontFamily::Name(Arc::from("Merriweather"))  => "Merriweather",
@@ -231,6 +221,27 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 									.step_by(0.25)
 									.prefix("Line Spacing: ")
 							);
+
+							ui.collapsing("Colors", |ui| {
+								ui.horizontal(|ui| {
+									ui.color_edit_button_srgba(&mut state.theme.highlight_color);
+									ui.label(": Highlight Color");
+								});
+								ui.horizontal(|ui| {
+									ui.color_edit_button_srgba(&mut state.theme.text_color);
+									ui.label(": Text Color");
+								});
+								ui.horizontal(|ui| {
+									ui.color_edit_button_srgba(&mut state.theme.page_color);
+									ui.label(": Page Color");
+								});
+
+								ui.separator();
+
+								if ui.button("Reset Colors").clicked() {
+									state.theme = DocumentColors::default()
+								}
+							});
 
 							ui.separator();
 
@@ -398,12 +409,13 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                 ui.label(&book.get_current_str().unwrap());
               } else {
                 let style = &state.book_style;
+								let theme = &state.theme;
                 let contents = parse_calibre(&book.get_current_str().unwrap());
                 let contents: Vec<&str> = contents.lines().collect();
 
                 // Background
                 ui.painter()
-                  .rect_filled(ui.clip_rect(), 0.0, style.bg_color);
+                  .rect_filled(ui.clip_rect(), 0.0, theme.page_color);
 
 								// Actual "stuff"
 								let font_id = FontId::new(style.font_size, style.font_family.clone());
@@ -416,7 +428,7 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 								for (line_number, line) in contents.into_iter().enumerate() {
 									let response = ui.add(Label::new(
 										RichText::new(line)
-										.color(style.font_color)
+										.color(theme.text_color)
 										.background_color(
 											if let Some(color) = state.book_userdata.get(
 												&state.selected_book_path.as_ref().unwrap().clone()).unwrap().highlights.get(&(state.chapter_number, line_number)
