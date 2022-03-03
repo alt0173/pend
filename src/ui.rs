@@ -46,7 +46,7 @@ impl Default for BookTextStyle {
   fn default() -> Self {
     Self {
       font_size: 22.0,
-      font_family: FontFamily::Monospace,
+      font_family: FontFamily::Proportional,
       font_color: Color32::BLACK,
       bg_color: Color32::from_rgb(239, 229, 213),
       line_spacing_multiplier: 0.0,
@@ -54,6 +54,7 @@ impl Default for BookTextStyle {
     }
   }
 }
+
 // The PartiqlOrd derive may lead to issues?
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialOrd)]
 pub struct Note {
