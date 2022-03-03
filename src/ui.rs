@@ -39,7 +39,6 @@ pub struct BookTextStyle {
   pub font_color: Color32,
   pub bg_color: Color32,
   pub line_spacing_multiplier: f32,
-  pub text_layout: PageLayout,
 }
 
 impl Default for BookTextStyle {
@@ -50,7 +49,6 @@ impl Default for BookTextStyle {
       font_color: Color32::BLACK,
       bg_color: Color32::from_rgb(239, 229, 213),
       line_spacing_multiplier: 0.0,
-      text_layout: PageLayout::LeftToRight,
     }
   }
 }
@@ -92,13 +90,6 @@ impl Note {
       content: String::new(),
     }
   }
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub enum PageLayout {
-  RightToLeft,
-  LeftToRight,
-  Centered,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -228,27 +219,6 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 								ui.selectable_value(&mut state.book_style.font_family, FontFamily::Proportional, "Work Sans");
 								ui.selectable_value(&mut state.book_style.font_family, FontFamily::Name("Merriweather".into()), "Merriweather");
 							});
-
-							// Reading direction selection
-              ComboBox::from_label("Text Alignment")
-                .selected_text(format!("{:?}", state.book_style.text_layout))
-                .show_ui(ui, |ui| {
-                  ui.selectable_value(
-                    &mut state.book_style.text_layout,
-                    PageLayout::LeftToRight,
-                    "Left \u{2192} Right",
-                  );
-                  ui.selectable_value(
-                    &mut state.book_style.text_layout,
-                    PageLayout::RightToLeft,
-                    "Left \u{2190} Right",
-                  );
-                  ui.selectable_value(
-                    &mut state.book_style.text_layout,
-                    PageLayout::Centered,
-                    "Centered",
-                  );
-                });
 
               ui.add(
                 egui::Slider::new(&mut state.book_style.font_size, 12.0..=120.0)
