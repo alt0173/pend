@@ -102,15 +102,15 @@ pub enum PageLayout {
 
 #[derive(Serialize, Deserialize)]
 pub struct ThemeInfo {
-	pub highlight_color: Color32,
+  pub highlight_color: Color32,
 }
 
 impl Default for ThemeInfo {
-	fn default() -> Self {
-		Self {
-			highlight_color: Color32::YELLOW
-		}
-	}
+  fn default() -> Self {
+    Self {
+      highlight_color: Color32::YELLOW,
+    }
+  }
 }
 
 pub fn main_ui(ctx: &Context, state: &mut MyApp) {
