@@ -12,7 +12,7 @@ use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  backend::{load_library, parse_calibre},
+  backend::{load_library, parse_calibre, FormattingInfo},
   MyApp,
 };
 
@@ -492,8 +492,10 @@ fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
 
           for (line_number, line) in contents.into_iter().enumerate() {
             let response = ui.add(
-              Label::new(
-                RichText::new(line)
+              Label::new({
+                // Creates text with normal / default appearence
+                // This is how normal body text looks
+                let mut text = RichText::new(line)
                   .color(theme.text_color)
                   .background_color(
                     if let Some(color) = state
@@ -508,8 +510,25 @@ fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                       Color32::TRANSPARENT
                     },
                   )
-                  .font(font_id.clone()),
-              )
+                  .font(font_id.clone());
+
+                // Applies special formatting (heading, bold, etc.)
+                if let Some(info) = state
+                  .book_userdata
+                  .get_mut(state.selected_book_path.as_ref().unwrap())
+                  .unwrap()
+                  .formatting_info
+                  .get(&(state.chapter_number, line_number))
+                {
+                  match info {
+                    FormattingInfo::Heading => text = text.size(font_id.size * 2.0),
+                    FormattingInfo::Bold => text = text.strong(),
+                    FormattingInfo::Italic => text = text.italics(),
+                  }
+                }
+
+                text
+              })
               .sense(Sense::click()),
             );
 

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ui::Note, MyApp};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum FormattingInfo {
   Heading,
   Bold,
@@ -17,7 +17,7 @@ pub enum FormattingInfo {
 }
 
 // Contains custom content a user creates for each book (notes, highlighted lines, etc.)
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LocalBookInfo {
   pub notes: Vec<Note>,
   /// (Chapter, Line), Color of the highlight
@@ -43,6 +43,9 @@ pub fn parse_calibre(
 ) -> String {
   let mut output = String::new();
 
+  let mut format_info: Vec<((usize, usize), FormattingInfo)> = Vec::new();
+  let mut lines_removed = 0;
+
   for (line_number, line) in input.lines().enumerate() {
     let rx = Regex::new(r"<(.*?)>").unwrap();
 
@@ -50,9 +53,7 @@ pub fn parse_calibre(
       for capture in captures.iter().flatten() {
         match capture.as_str() {
           "title" => {
-            book_info
-              .formatting_info
-              .insert((chapter, line_number), FormattingInfo::Heading);
+            book_info.formatting_info.insert((chapter, line_number - lines_removed), FormattingInfo::Heading);
           }
           _ => {}
         }
@@ -65,6 +66,8 @@ pub fn parse_calibre(
     if !processed.is_empty() {
       output.push_str(processed);
       output.push('\n');
+    } else {
+			lines_removed += 1;
     }
   }
 
@@ -80,7 +83,6 @@ pub fn load_library(state: &mut MyApp) {
     // Add file to library if not already added
     if !state.library.contains(&file_path) {
       state.library.push(file_path.clone());
-      println!("{:?}", &file_path);
     }
     // Same thing for the book cover
     let mut doc = EpubDoc::new(&file_path).unwrap();
