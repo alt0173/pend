@@ -11,7 +11,9 @@ use crate::{ui::Note, MyApp};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum FormattingInfo {
-  Heading,
+  Title,
+	Heading,
+	Heading2,
   Bold,
   Italic,
 }
@@ -42,21 +44,26 @@ pub fn parse_calibre(
   book_info: &mut LocalBookInfo,
 ) -> String {
   let mut output = String::new();
-
-  let mut format_info: Vec<((usize, usize), FormattingInfo)> = Vec::new();
   let mut lines_removed = 0;
 
   for (line_number, line) in input.lines().enumerate() {
     let rx = Regex::new(r"<(.*?)>").unwrap();
 
+		// Important
     for captures in rx.captures_iter(line) {
       for capture in captures.iter().flatten() {
-        match capture.as_str() {
-          "title" => {
-            book_info.formatting_info.insert((chapter, line_number - lines_removed), FormattingInfo::Heading);
-          }
-          _ => {}
-        }
+				if let Some(format) = match capture.as_str() {
+					x if x.contains("title") => Some(FormattingInfo::Title),
+					x if x.contains("h") => Some(FormattingInfo::Heading),
+					x if x.contains("h2") => Some(FormattingInfo::Heading),
+					_ => None
+				} {
+					book_info.formatting_info.insert(
+						(chapter, line_number - lines_removed),
+						format
+					);
+				}
+
       }
     }
 
@@ -67,7 +74,7 @@ pub fn parse_calibre(
       output.push_str(processed);
       output.push('\n');
     } else {
-			lines_removed += 1;
+      lines_removed += 1;
     }
   }
 

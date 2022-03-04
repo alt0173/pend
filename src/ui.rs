@@ -345,7 +345,7 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
                         {
                           state.selected_book = Some(EpubDoc::new(book).unwrap());
                           state.selected_book_path = Some(book.clone());
-                          state.chapter_number = 0;
+                          state.chapter_number = 1;
                         }
                         ui.label(RichText::new(title).text_style(TextStyle::Body));
 												if let Some(author) = doc.mdata("creator") {
@@ -434,14 +434,14 @@ fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
 
     ui.horizontal(|ui| {
       // Back page (CHAPTER) button
-      if ui.button("\u{2190}").clicked() && book.get_current_page() > 0 {
+      if ui.button("\u{2190}").clicked() && book.get_current_page() > 1 {
         state.chapter_number -= 1;
       }
       // Page (CHAPTER) navigation thing
       ui.add(
         DragValue::new(&mut state.chapter_number)
           .max_decimals(0)
-          .clamp_range(0..=book.get_num_pages() - 1),
+          .clamp_range(1..=book.get_num_pages() - 1),
       );
       // Forward page (CHAPTER) button
       if ui.button("\u{2192}").clicked()
@@ -521,7 +521,15 @@ fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                   .get(&(state.chapter_number, line_number))
                 {
                   match info {
-                    FormattingInfo::Heading => text = text.size(font_id.size * 2.0),
+                    FormattingInfo::Title => {
+                      text = text.size(font_id.size * 1.75)
+                    }
+										FormattingInfo::Heading => {
+                      text = text.size(font_id.size * 1.5)
+                    },
+										FormattingInfo::Heading2 => {
+                      text = text.size(font_id.size * 1.25)
+                    },
                     FormattingInfo::Bold => text = text.strong(),
                     FormattingInfo::Italic => text = text.italics(),
                   }
