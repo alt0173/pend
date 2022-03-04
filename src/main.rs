@@ -14,7 +14,7 @@ use eframe::{
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
-use ui::{main_ui, BookTextStyle, Note, PanelState, DocumentColors, UIState};
+use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState, PageLayout};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
@@ -30,6 +30,7 @@ pub struct MyApp {
   selected_book_path: Option<PathBuf>,
   chapter_number: usize,
   book_style: BookTextStyle,
+	page_layout: PageLayout,
   book_userdata: HashMap<PathBuf, UserBookInfo>,
   goto_target: Option<Note>,
   theme: DocumentColors,
@@ -55,6 +56,7 @@ impl Default for MyApp {
         line_spacing_multiplier: 1.0,
         ..Default::default()
       },
+			page_layout: PageLayout::default(),
       book_userdata: HashMap::new(),
       goto_target: None,
       theme: DocumentColors::default(),
