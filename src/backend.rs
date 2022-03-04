@@ -9,28 +9,55 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ui::Note, MyApp};
 
+#[derive(Serialize, Deserialize)]
+pub enum FormattingInfo {
+  Heading,
+  Bold,
+  Italic,
+}
+
 // Contains custom content a user creates for each book (notes, highlighted lines, etc.)
 #[derive(Serialize, Deserialize)]
-pub struct UserBookInfo {
+pub struct LocalBookInfo {
   pub notes: Vec<Note>,
   /// (Chapter, Line), Color of the highlight
   pub highlights: HashMap<(usize, usize), Color32>,
+  /// (Chapter, Line), info
+  pub formatting_info: HashMap<(usize, usize), FormattingInfo>,
 }
 
-impl UserBookInfo {
+impl LocalBookInfo {
   pub fn new() -> Self {
     Self {
       notes: Vec::new(),
       highlights: HashMap::new(),
+      formatting_info: HashMap::new(),
     }
   }
 }
 
-pub fn parse_calibre(input: &str) -> String {
+pub fn parse_calibre(
+  input: &str,
+  chapter: usize,
+  book_info: &mut LocalBookInfo,
+) -> String {
   let mut output = String::new();
 
-  for line in input.lines() {
-    let rx = Regex::new(r"<.*?>").unwrap();
+  for (line_number, line) in input.lines().enumerate() {
+    let rx = Regex::new(r"<(.*?)>").unwrap();
+
+    for captures in rx.captures_iter(line) {
+      for capture in captures.iter().flatten() {
+        match capture.as_str() {
+          "title" => {
+            book_info
+              .formatting_info
+              .insert((chapter, line_number), FormattingInfo::Heading);
+          }
+          _ => {}
+        }
+      }
+    }
 
     let processed = rx.replace_all(line, "");
     let processed = processed.trim();
@@ -70,6 +97,6 @@ pub fn load_library(state: &mut MyApp) {
     state
       .book_userdata
       .entry(file_path)
-      .or_insert_with(UserBookInfo::new);
+      .or_insert_with(LocalBookInfo::new);
   }
 }
