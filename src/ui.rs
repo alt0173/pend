@@ -417,131 +417,135 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 
     egui::CentralPanel::default().show(ctx, |ui| {
       if state.ui_state.right_panel_state == PanelState::Reader {
-        // Displays page(s) of the book
-        if let Some(book) = &mut state.selected_book {
-					if let Some(target) = &state.goto_target {
-						state.chapter_number = target.chapter as usize;
-					}
-
-          ui.horizontal(|ui| {
-            // Back page (CHAPTER) button
-            if ui.button("\u{2190}").clicked() && book.get_current_page() > 0 {
-              state.chapter_number -= 1;
-            }
-            // Page (CHAPTER) navigation thing
-            ui.add(
-              DragValue::new(&mut state.chapter_number)
-                .max_decimals(0)
-                .clamp_range(0..=book.get_num_pages() - 1),
-            );
-            // Forward page (CHAPTER) button
-            if ui.button("\u{2192}").clicked()
-              && book.get_current_page() < book.get_num_pages() - 1
-            {
-              state.chapter_number += 1;
-            }
-            // Apply page / chapter change of needed
-            if book.get_current_page() != state.chapter_number {
-              book.set_current_page(state.chapter_number).unwrap()
-            }
-          });
-
-          ui.separator();
-
-          // Display of page (CHAPTER) contents
-          ScrollArea::new([false, true])
-            .always_show_scroll(false)
-            .auto_shrink([false, true])
-            .show(ui, |ui| {
-              if state.ui_state.display_raw_text {
-                ui.label(&book.get_current_str().unwrap());
-              } else {
-                let style = &state.book_style;
-								let theme = &state.theme;
-                let contents = parse_calibre(&book.get_current_str().unwrap());
-                let contents: Vec<&str> = contents.lines().collect();
-
-                // Background
-                ui.painter()
-                  .rect_filled(ui.clip_rect(), 0.0, theme.page_color);
-
-								// Actual "stuff"
-								let font_id = FontId::new(style.font_size, style.font_family.clone());
-								let line_spacing = ui.fonts().row_height(&font_id) * style.line_spacing_multiplier;
-
-								ui.style_mut().spacing.item_spacing.y = line_spacing;
-
-								let mut goto_target_response = None;
-
-								for (line_number, line) in contents.into_iter().enumerate() {
-									let response = ui.add(Label::new(
-										RichText::new(line)
-										.color(theme.text_color)
-										.background_color(
-											if let Some(color) = state.book_userdata.get(
-												&state.selected_book_path.as_ref().unwrap().clone()).unwrap().highlights.get(&(state.chapter_number, line_number)
-											) {
-												color.clone()
-											} else {
-												Color32::TRANSPARENT
-											}
-										)
-										.font(font_id.clone())
-									).sense(Sense::click()));
-
-									if let Some(target) = &state.goto_target {
-										if line_number == target.line as usize {
-											goto_target_response = Some(response.clone());
-										}
-									}
-
-									// Context menu
-									response.context_menu(|ui| {
-										if ui.button("Highlight").clicked() {
-											let highlights = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().highlights;
-											let coord = (state.chapter_number, line_number);
-
-											if let Some(color) = highlights.get_mut(&coord) {
-												if *color != state.theme.highlight_color {
-													*color = state.theme.highlight_color;
-												} else {
-													highlights.remove(&coord);
-												};
-											} else {
-												highlights.insert(coord, state.theme.highlight_color);
-											}
-
-											ui.close_menu();
-										}
-
-										if ui.button("Add Note").clicked() {
-											let notes = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().notes;
-											let note = Note::new(book.get_current_page() as u16, line_number as u16);
-
-											// Adds the note if one is not already in place for the specified chapter / line combo
-											if !notes.contains(&note) {
-												notes.push(note);
-												state.ui_state.left_panel_state = PanelState::Notes;
-
-												ui.close_menu();
-											}
-										}
-									});
-
-								}
-
-								if let Some(response) = goto_target_response {
-										response.scroll_to_me(Some(egui::Align::TOP));
-										state.goto_target = None;
-									}
-              }
-            });
-        } else {
-          ui.label("No book loaded");
-        }
+				right_panel_reader_ui(state, ui);
       } else {
         todo!()
       }
     });
   });
+}
+
+fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
+	// Displays page(s) of the book
+	if let Some(book) = &mut state.selected_book {
+		if let Some(target) = &state.goto_target {
+			state.chapter_number = target.chapter as usize;
+		}
+
+		ui.horizontal(|ui| {
+			// Back page (CHAPTER) button
+			if ui.button("\u{2190}").clicked() && book.get_current_page() > 0 {
+				state.chapter_number -= 1;
+			}
+			// Page (CHAPTER) navigation thing
+			ui.add(
+				DragValue::new(&mut state.chapter_number)
+					.max_decimals(0)
+					.clamp_range(0..=book.get_num_pages() - 1),
+			);
+			// Forward page (CHAPTER) button
+			if ui.button("\u{2192}").clicked()
+				&& book.get_current_page() < book.get_num_pages() - 1
+			{
+				state.chapter_number += 1;
+			}
+			// Apply page / chapter change of needed
+			if book.get_current_page() != state.chapter_number {
+				book.set_current_page(state.chapter_number).unwrap()
+			}
+		});
+
+		ui.separator();
+
+		// Display of page (CHAPTER) contents
+		ScrollArea::new([false, true])
+			.always_show_scroll(false)
+			.auto_shrink([false, true])
+			.show(ui, |ui| {
+				if state.ui_state.display_raw_text {
+					ui.label(&book.get_current_str().unwrap());
+				} else {
+					let style = &state.book_style;
+					let theme = &state.theme;
+					let contents = parse_calibre(&book.get_current_str().unwrap());
+					let contents: Vec<&str> = contents.lines().collect();
+
+					// Background
+					ui.painter()
+						.rect_filled(ui.clip_rect(), 0.0, theme.page_color);
+
+					// Actual "stuff"
+					let font_id = FontId::new(style.font_size, style.font_family.clone());
+					let line_spacing = ui.fonts().row_height(&font_id) * style.line_spacing_multiplier;
+
+					ui.style_mut().spacing.item_spacing.y = line_spacing;
+
+					let mut goto_target_response = None;
+
+					for (line_number, line) in contents.into_iter().enumerate() {
+						let response = ui.add(Label::new(
+							RichText::new(line)
+							.color(theme.text_color)
+							.background_color(
+								if let Some(color) = state.book_userdata.get(
+									&state.selected_book_path.as_ref().unwrap().clone()).unwrap().highlights.get(&(state.chapter_number, line_number)
+								) {
+									color.clone()
+								} else {
+									Color32::TRANSPARENT
+								}
+							)
+							.font(font_id.clone())
+						).sense(Sense::click()));
+
+						if let Some(target) = &state.goto_target {
+							if line_number == target.line as usize {
+								goto_target_response = Some(response.clone());
+							}
+						}
+
+						// Context menu
+						response.context_menu(|ui| {
+							if ui.button("Highlight").clicked() {
+								let highlights = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().highlights;
+								let coord = (state.chapter_number, line_number);
+
+								if let Some(color) = highlights.get_mut(&coord) {
+									if *color != state.theme.highlight_color {
+										*color = state.theme.highlight_color;
+									} else {
+										highlights.remove(&coord);
+									};
+								} else {
+									highlights.insert(coord, state.theme.highlight_color);
+								}
+
+								ui.close_menu();
+							}
+
+							if ui.button("Add Note").clicked() {
+								let notes = &mut state.book_userdata.get_mut(state.selected_book_path.as_ref().unwrap()).unwrap().notes;
+								let note = Note::new(book.get_current_page() as u16, line_number as u16);
+
+								// Adds the note if one is not already in place for the specified chapter / line combo
+								if !notes.contains(&note) {
+									notes.push(note);
+									state.ui_state.left_panel_state = PanelState::Notes;
+
+									ui.close_menu();
+								}
+							}
+						});
+
+					}
+
+					if let Some(response) = goto_target_response {
+							response.scroll_to_me(Some(egui::Align::TOP));
+							state.goto_target = None;
+						}
+				}
+			});
+	} else {
+		ui.label("No book loaded");
+	}
 }
