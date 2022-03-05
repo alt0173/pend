@@ -7,7 +7,7 @@ use eframe::{
   },
   epaint::{vec2, Color32, FontId},
 };
-use egui::{Align, Direction, FontFamily, Label, Sense};
+use egui::{FontFamily, Label, Sense};
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
 
@@ -103,53 +103,6 @@ impl Default for DocumentColors {
       text_color: Color32::BLACK,
       page_color: Color32::from_rgb(239, 229, 213),
     }
-  }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct PageLayout {
-  main_dir: Direction,
-  main_wrap: bool,
-  cross_align: Align,
-  cross_justify: bool,
-}
-
-impl Default for PageLayout {
-  fn default() -> Self {
-    PageLayout::left_to_right_wrapped()
-  }
-}
-
-impl PageLayout {
-  fn left_to_right_wrapped() -> Self {
-    Self {
-      main_dir: Direction::LeftToRight,
-      main_wrap: true,
-      cross_align: Align::Center,
-      cross_justify: false,
-    }
-  }
-  fn right_to_left_wrapped() -> Self {
-    Self {
-      main_dir: Direction::RightToLeft,
-      main_wrap: true,
-      cross_align: Align::Center,
-      cross_justify: false,
-    }
-  }
-  fn centered() -> Self {
-    Self {
-      main_dir: Direction::TopDown,
-      main_wrap: true,
-      cross_align: Align::Min,
-      cross_justify: false,
-    }
-  }
-
-  fn layout(&self) -> egui::Layout {
-    egui::Layout::from_main_dir_and_cross_align(self.main_dir, self.cross_align)
-      .with_main_wrap(self.main_wrap)
-      .with_cross_justify(self.cross_justify)
   }
 }
 
