@@ -9,11 +9,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ui::Note, MyApp};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum FormattingInfo {
   Title,
-	Heading,
-	Heading2,
+  Heading,
+  Heading2,
   Bold,
   Italic,
 }
@@ -49,21 +49,19 @@ pub fn parse_calibre(
   for (line_number, line) in input.lines().enumerate() {
     let rx = Regex::new(r"<(.*?)>").unwrap();
 
-		// Important
+    // Important
     for captures in rx.captures_iter(line) {
       for capture in captures.iter().flatten() {
-				if let Some(format) = match capture.as_str() {
-					x if x.contains("title") => Some(FormattingInfo::Title),
-					x if x.contains("h") => Some(FormattingInfo::Heading),
-					x if x.contains("h2") => Some(FormattingInfo::Heading),
-					_ => None
-				} {
-					book_info.formatting_info.insert(
-						(chapter, line_number - lines_removed),
-						format
-					);
-				}
-
+        if let Some(format) = match capture.as_str() {
+          x if x.contains("title") => Some(FormattingInfo::Title),
+          x if x.contains("h") => Some(FormattingInfo::Heading),
+          x if x.contains("h2") => Some(FormattingInfo::Heading),
+          _ => None,
+        } {
+          book_info
+            .formatting_info
+            .insert((chapter, line_number - lines_removed), format);
+        }
       }
     }
 

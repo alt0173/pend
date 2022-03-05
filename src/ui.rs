@@ -522,14 +522,14 @@ fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                 {
                   match info {
                     FormattingInfo::Title => {
-                      text = text.size(font_id.size * 1.75)
+                      text = text.size(font_id.size * 1.75);
                     }
-										FormattingInfo::Heading => {
-                      text = text.size(font_id.size * 1.5)
-                    },
-										FormattingInfo::Heading2 => {
-                      text = text.size(font_id.size * 1.25)
-                    },
+                    FormattingInfo::Heading => {
+                      text = text.size(font_id.size * 1.5);
+                    }
+                    FormattingInfo::Heading2 => {
+                      text = text.size(font_id.size * 1.25);
+                    }
                     FormattingInfo::Bold => text = text.strong(),
                     FormattingInfo::Italic => text = text.italics(),
                   }
