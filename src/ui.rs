@@ -280,6 +280,10 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 									state.selected_book = None;
 									state.selected_book_path = None;
 								}
+
+								ui.separator();
+
+								TextEdit::singleline(&mut state.library_search).hint_text("Search Library...").show(ui);
 							});
 							ui.separator();
 
@@ -290,7 +294,12 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 
 									for book in state.library.iter() {
 										if let Ok(doc) = EpubDoc::new(book) {
-											if let Some(title) = doc.mdata("title") {
+											let title = doc.mdata("title").unwrap();
+											let author = doc.mdata("creator").unwrap();
+
+											// Search application
+											if title.contains(&state.library_search) || author.contains(&state.library_search) {
+												// Display the cover & info
 												ui.vertical_centered(|ui| {
 													if ui
 														.add(egui::ImageButton::new(
@@ -422,13 +431,13 @@ fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
           state.chapter_number += 1;
         }
       } else {
-				ui.horizontal(|ui| {
-					ui.with_layout(egui::Layout::right_to_left(), |ui| {
-						if ui.button("Exit Focus").clicked() {
-							state.ui_state.reader_focus_mode = false;
-						}
-					});
-				});
+        ui.horizontal(|ui| {
+          ui.with_layout(egui::Layout::right_to_left(), |ui| {
+            if ui.button("Exit Focus").clicked() {
+              state.ui_state.reader_focus_mode = false;
+            }
+          });
+        });
       }
     });
 

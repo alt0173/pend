@@ -22,6 +22,7 @@ pub struct MyApp {
   ui_state: UIState,
   library: Vec<PathBuf>,
   library_path: String,
+  library_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
   book_covers: HashMap<String, RetainedImage>,
@@ -48,6 +49,7 @@ impl Default for MyApp {
       },
       library: Vec::new(),
       library_path: "./library".into(),
+      library_search: String::new(),
       book_covers: HashMap::new(),
       selected_book: None,
       selected_book_path: None,
@@ -200,8 +202,8 @@ fn main() {
     ..Default::default()
   };
   let native_options = NativeOptions {
-		min_window_size: Some(vec2(960.0, 540.0)),
-		..Default::default()
-	};
+    min_window_size: Some(vec2(960.0, 540.0)),
+    ..Default::default()
+  };
   run_native(Box::new(app), native_options)
 }
