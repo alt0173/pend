@@ -20,6 +20,7 @@ use crate::{
 pub struct UIState {
   pub left_panel_state: PanelState,
   pub right_panel_state: PanelState,
+  pub reader_focus_mode: bool,
   pub display_ofl_popup: bool,
   pub display_raw_text: bool,
 }
@@ -44,8 +45,8 @@ impl Default for BookTextStyle {
   fn default() -> Self {
     Self {
       font_size: 22.0,
-      font_family: FontFamily::Proportional,
-      line_spacing_multiplier: 0.0,
+      font_family: FontFamily::Name("Merriweather".into()),
+      line_spacing_multiplier: 1.0,
     }
   }
 }
@@ -156,217 +157,221 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
   }
 
 		// Panels
-    egui::SidePanel::left("Left Panel")
-      .resizable(true)
-      .width_range(area_width / 3.0..=area_width / 1.5)
-      .show(ctx, |ui| {
-        ui.horizontal(|ui| {
-          ui.selectable_value(
-            &mut state.ui_state.left_panel_state,
-            PanelState::Library,
-            "Library",
-          );
-          ui.selectable_value(
-						&mut state.ui_state.left_panel_state,
-            PanelState::Notes,
-            "Notes",
-          );
-					ui.selectable_value(
-						&mut state.ui_state.left_panel_state,
-						PanelState::Info,
-						"Info",
-					);
+		if !state.ui_state.reader_focus_mode || state.selected_book.is_none() {
+			egui::SidePanel::left("Left Panel")
+				.resizable(true)
+				.width_range(area_width / 3.0..=area_width / 1.5)
+				.show(ctx, |ui| {
+					ui.horizontal(|ui| {
+						ui.selectable_value(
+							&mut state.ui_state.left_panel_state,
+							PanelState::Library,
+							"Library",
+						);
+						ui.selectable_value(
+							&mut state.ui_state.left_panel_state,
+							PanelState::Notes,
+							"Notes",
+						);
+						ui.selectable_value(
+							&mut state.ui_state.left_panel_state,
+							PanelState::Info,
+							"Info",
+						);
 
-          ui.with_layout(egui::Layout::right_to_left(), |ui| {
-            ui.selectable_value(
-              &mut state.ui_state.left_panel_state,
-              PanelState::Config,
-              "Config",
-            );
-          });
-        });
-        ui.separator();
+						ui.with_layout(egui::Layout::right_to_left(), |ui| {
+							ui.selectable_value(
+								&mut state.ui_state.left_panel_state,
+								PanelState::Config,
+								"Config",
+							);
+						});
+					});
+					ui.separator();
 
-        match state.ui_state.left_panel_state {
-          PanelState::Config => {
-            ui.collapsing("Program", |ui| {
-              // Path to directory containing books
-              ui.horizontal(|ui| {
-                ui.label("Library Path:");
-                TextEdit::singleline(&mut state.library_path)
-                  .hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
-                  .show(ui);
-              });
-            });
+					match state.ui_state.left_panel_state {
+						PanelState::Config => {
+							ui.collapsing("Program", |ui| {
+								// Path to directory containing books
+								ui.horizontal(|ui| {
+									ui.label("Library Path:");
+									TextEdit::singleline(&mut state.library_path)
+										.hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
+										.show(ui);
+								});
 
-            ui.collapsing("Document", |ui| {
-							ComboBox::from_label("Font")
-							.selected_text(match &state.book_style.font_family {
-								f if f == &FontFamily::Proportional => "Work Sans",
-								f if f == &FontFamily::Name(Arc::from("Merriweather"))  => "Merriweather",
-								_ => "Unrecognized Font"
-							})
-							.show_ui(ui, |ui| {
-								ui.selectable_value(&mut state.book_style.font_family, FontFamily::Proportional, "Work Sans");
-								ui.selectable_value(&mut state.book_style.font_family, FontFamily::Name("Merriweather".into()), "Merriweather");
+								ui.checkbox(&mut state.ui_state.reader_focus_mode, "Focus Mode");
 							});
 
-              ui.add(
-                egui::Slider::new(&mut state.book_style.font_size, 12.0..=120.0)
-									.step_by(0.25)
-                  .prefix("Text Size: ")
-              );
-
-							ui.add(
-								egui::Slider::new(&mut state.book_style.line_spacing_multiplier, 0.0..=6.0)
-									.step_by(0.25)
-									.prefix("Line Spacing: ")
-							);
-
-							ui.collapsing("Colors", |ui| {
-								ui.horizontal(|ui| {
-									ui.color_edit_button_srgba(&mut state.theme.highlight_color);
-									ui.label(": Highlight Color");
+							ui.collapsing("Document", |ui| {
+								ComboBox::from_label("Font")
+								.selected_text(match &state.book_style.font_family {
+									f if f == &FontFamily::Proportional => "Work Sans",
+									f if f == &FontFamily::Name(Arc::from("Merriweather"))  => "Merriweather",
+									_ => "Unrecognized Font"
+								})
+								.show_ui(ui, |ui| {
+									ui.selectable_value(&mut state.book_style.font_family, FontFamily::Proportional, "Work Sans");
+									ui.selectable_value(&mut state.book_style.font_family, FontFamily::Name("Merriweather".into()), "Merriweather");
 								});
-								ui.horizontal(|ui| {
-									ui.color_edit_button_srgba(&mut state.theme.text_color);
-									ui.label(": Text Color");
-								});
-								ui.horizontal(|ui| {
-									ui.color_edit_button_srgba(&mut state.theme.page_color);
-									ui.label(": Page Color");
+
+								ui.add(
+									egui::Slider::new(&mut state.book_style.font_size, 12.0..=120.0)
+										.step_by(0.25)
+										.prefix("Text Size: ")
+								);
+
+								ui.add(
+									egui::Slider::new(&mut state.book_style.line_spacing_multiplier, 0.0..=6.0)
+										.step_by(0.25)
+										.prefix("Line Spacing: ")
+								);
+
+								ui.collapsing("Colors", |ui| {
+									ui.horizontal(|ui| {
+										ui.color_edit_button_srgba(&mut state.theme.highlight_color);
+										ui.label(": Highlight Color");
+									});
+									ui.horizontal(|ui| {
+										ui.color_edit_button_srgba(&mut state.theme.text_color);
+										ui.label(": Text Color");
+									});
+									ui.horizontal(|ui| {
+										ui.color_edit_button_srgba(&mut state.theme.page_color);
+										ui.label(": Page Color");
+									});
+
+									ui.separator();
+
+									if ui.button("Reset Colors").clicked() {
+										state.theme = DocumentColors::default()
+									}
 								});
 
 								ui.separator();
 
-								if ui.button("Reset Colors").clicked() {
-									state.theme = DocumentColors::default()
-								}
+								ui.horizontal(|ui| {
+									if ui.button("Reset Style").clicked() {
+										state.book_style = BookTextStyle::default();
+									}
+									if ui.button("Clear Highlights").clicked() {
+										if let Some(path) = &state.selected_book_path {
+											state.book_userdata.get_mut(path).unwrap().highlights.clear();
+										}
+									}
+								});
 							});
 
+							ui.collapsing("Other", |ui| {
+								if ui.button("Acknowledgements").clicked() {
+									state.ui_state.display_ofl_popup = true;
+								}
+								// ui.checkbox(&mut state.ui_state.display_raw_text, "[DEBUG] Display Raw Text");
+							});
+						}
+						PanelState::Library => {
+							ui.horizontal(|ui| {
+								if ui.button("Load Library").clicked() {
+									load_library(state);
+								}
+								if ui.button("Clear Library").clicked() {
+									state.library.clear();
+									state.book_covers.clear();
+									state.selected_book = None;
+									state.selected_book_path = None;
+								}
+							});
 							ui.separator();
 
-							ui.horizontal(|ui| {
-								if ui.button("Reset Style").clicked() {
-									state.book_style = BookTextStyle::default();
-								}
-								if ui.button("Clear Highlights").clicked() {
-									if let Some(path) = &state.selected_book_path {
-										state.book_userdata.get_mut(path).unwrap().highlights.clear();
-									}
-								}
-							});
-            });
+							egui::Grid::new("Library Shelf Thing")
+								.striped(true)
+								.show(ui, |ui| {
+									let y = ui.available_height() / 6.0;
 
-            ui.collapsing("Other", |ui| {
-              if ui.button("Acknowledgements").clicked() {
-                state.ui_state.display_ofl_popup = true;
-              }
-              ui.checkbox(&mut state.ui_state.display_raw_text, "[DEBUG] Display Raw Text");
-            });
-          }
-          PanelState::Library => {
-            ui.horizontal(|ui| {
-              if ui.button("Load Library").clicked() {
-								load_library(state);
-              }
-              if ui.button("Clear Library").clicked() {
-                state.library.clear();
-                state.book_covers.clear();
-                state.selected_book = None;
-                state.selected_book_path = None;
-              }
-            });
-            ui.separator();
-
-            egui::Grid::new("Library Shelf Thing")
-              .striped(true)
-              .show(ui, |ui| {
-                let y = ui.available_height() / 6.0;
-
-                for book in state.library.iter() {
-                  if let Ok(doc) = EpubDoc::new(book) {
-                    if let Some(title) = doc.mdata("title") {
-                      ui.vertical_centered(|ui| {
-                        if ui
-                          .add(egui::ImageButton::new(
-                            state.book_covers.get(&title).unwrap().texture_id(ctx),
-                            vec2(y * 50.0, y * 80.0),
-                          ))
-                          .clicked()
-                          && state.selected_book_path != Some(book.to_path_buf())
-                        {
-                          state.selected_book = Some(EpubDoc::new(book).unwrap());
-                          state.selected_book_path = Some(book.clone());
-                          state.chapter_number = 1;
-                        }
-                        ui.label(RichText::new(title).text_style(TextStyle::Body));
-												if let Some(author) = doc.mdata("creator") {
-													ui.label(RichText::new(author).text_style(TextStyle::Body));
-												}
-                      });
-                    }
-                  }
-                }
-              });
-          }
-          PanelState::Notes => {
-						if let Some(path) = &state.selected_book_path {
-							if let Some(book_info) = state.book_userdata.get_mut(path) {
-								let notes = &mut book_info.notes;
-
-								ui.horizontal(|ui| {
-									if ui.button("Sort Notes").clicked() {
-										notes.sort();
-									}
-									if ui.button("Clear Notes").clicked() {
-										notes.clear();
-									}
-								});
-								ui.separator();
-
-								// Can't have mutable borrow && a mutable iter so a helper is needed
-								let mut to_delete = None;
-								for (index, note) in notes.iter_mut().enumerate() {
-									let (chapter, line, content) = (note.chapter, note.line, &mut note.content);
-
-									ui.horizontal(|ui| {
-										let response = ui.collapsing(format!("Ch. {}, line: {}", chapter, line), |ui| {
-											TextEdit::multiline(content)
-												.show(ui);
-										});
-
-										if response.body_response.is_none() {
-											if ui.button("Go to").clicked() {
-												state.goto_target = Some(Note::new(chapter, line));
-											}
-											if ui.button("Remove Note").clicked() {
-												to_delete = Some(index);
+									for book in state.library.iter() {
+										if let Ok(doc) = EpubDoc::new(book) {
+											if let Some(title) = doc.mdata("title") {
+												ui.vertical_centered(|ui| {
+													if ui
+														.add(egui::ImageButton::new(
+															state.book_covers.get(&title).unwrap().texture_id(ctx),
+															vec2(y * 50.0, y * 80.0),
+														))
+														.clicked()
+														&& state.selected_book_path != Some(book.to_path_buf())
+													{
+														state.selected_book = Some(EpubDoc::new(book).unwrap());
+														state.selected_book_path = Some(book.clone());
+														state.chapter_number = 1;
+													}
+													ui.label(RichText::new(title).text_style(TextStyle::Body));
+													if let Some(author) = doc.mdata("creator") {
+														ui.label(RichText::new(author).text_style(TextStyle::Body));
+													}
+												});
 											}
 										}
-									});
-								}
+									}
+								});
+						}
+						PanelState::Notes => {
+							if let Some(path) = &state.selected_book_path {
+								if let Some(book_info) = state.book_userdata.get_mut(path) {
+									let notes = &mut book_info.notes;
 
-								if let Some(index) = to_delete {
-									notes.remove(index);
+									ui.horizontal(|ui| {
+										if ui.button("Sort Notes").clicked() {
+											notes.sort();
+										}
+										if ui.button("Clear Notes").clicked() {
+											notes.clear();
+										}
+									});
+									ui.separator();
+
+									// Can't have mutable borrow && a mutable iter so a helper is needed
+									let mut to_delete = None;
+									for (index, note) in notes.iter_mut().enumerate() {
+										let (chapter, line, content) = (note.chapter, note.line, &mut note.content);
+
+										ui.horizontal(|ui| {
+											let response = ui.collapsing(format!("Ch. {}, line: {}", chapter, line), |ui| {
+												TextEdit::multiline(content)
+													.show(ui);
+											});
+
+											if response.body_response.is_none() {
+												if ui.button("Go to").clicked() {
+													state.goto_target = Some(Note::new(chapter, line));
+												}
+												if ui.button("Remove Note").clicked() {
+													to_delete = Some(index);
+												}
+											}
+										});
+									}
+
+									if let Some(index) = to_delete {
+										notes.remove(index);
+									}
+								} else {
+									ui.label("No notes detected.");
 								}
 							} else {
-								ui.label("No notes detected.");
+								ui.label("No Book Selected");
 							}
-						} else {
-							ui.label("No Book Selected");
 						}
-          }
-          PanelState::Info => {
-            ui.label("Info");
-          }
-					PanelState::Reader => {
-            panic!("This shouldn't happen");
-          }
-        }
+						PanelState::Info => {
+							ui.label("Info");
+						}
+						PanelState::Reader => {
+							panic!("This shouldn't happen");
+						}
+					}
 
-        left_panel_width = ui.min_rect().width();
-      });
+					left_panel_width = ui.min_rect().width();
+				});
+		}
 
     egui::CentralPanel::default().show(ctx, |ui| {
       if state.ui_state.right_panel_state == PanelState::Reader {
@@ -385,28 +390,53 @@ fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
       state.chapter_number = target.chapter as usize;
     }
 
+    // Arrow key navigation
+    if ui.ctx().input().key_pressed(egui::Key::ArrowLeft)
+      && book.get_current_page() > 1
+    {
+      state.chapter_number -= 1;
+    }
+    if ui.ctx().input().key_pressed(egui::Key::ArrowRight)
+      && book.get_current_page() < book.get_num_pages() - 1
+    {
+      state.chapter_number += 1;
+    }
+
+    // Button navigation
     ui.horizontal(|ui| {
-      // Back page (CHAPTER) button
-      if ui.button("\u{2190}").clicked() && book.get_current_page() > 1 {
-        state.chapter_number -= 1;
-      }
-      // Page (CHAPTER) navigation thing
-      ui.add(
-        DragValue::new(&mut state.chapter_number)
-          .max_decimals(0)
-          .clamp_range(1..=book.get_num_pages() - 1),
-      );
-      // Forward page (CHAPTER) button
-      if ui.button("\u{2192}").clicked()
-        && book.get_current_page() < book.get_num_pages() - 1
-      {
-        state.chapter_number += 1;
-      }
-      // Apply page / chapter change of needed
-      if book.get_current_page() != state.chapter_number {
-        book.set_current_page(state.chapter_number).unwrap()
+      if !state.ui_state.reader_focus_mode {
+        // Back page (CHAPTER) button
+        if ui.button("\u{2190}").clicked() && book.get_current_page() > 1 {
+          state.chapter_number -= 1;
+        }
+        // Page (CHAPTER) navigation thing
+        ui.add(
+          DragValue::new(&mut state.chapter_number)
+            .max_decimals(0)
+            .clamp_range(1..=book.get_num_pages() - 1),
+        );
+        // Forward page (CHAPTER) button
+        if ui.button("\u{2192}").clicked()
+          && book.get_current_page() < book.get_num_pages() - 1
+        {
+          state.chapter_number += 1;
+        }
+      } else {
+				ui.horizontal(|ui| {
+					ui.with_layout(egui::Layout::right_to_left(), |ui| {
+						if ui.button("Exit Focus").clicked() {
+							state.ui_state.reader_focus_mode = false;
+						}
+					});
+				});
       }
     });
+
+    // Apply page / chapter change of needed
+    if book.get_current_page() != state.chapter_number {
+      book.set_current_page(state.chapter_number).unwrap();
+      state.goto_target = Some(Note::new(state.chapter_number as u16, 0));
+    }
 
     ui.separator();
 

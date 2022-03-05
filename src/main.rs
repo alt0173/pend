@@ -11,12 +11,11 @@ use eframe::{
   epaint::{FontFamily, Rounding},
   epi, run_native, NativeOptions,
 };
+use egui::vec2;
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
-use ui::{
-  main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState,
-};
+use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
@@ -43,6 +42,7 @@ impl Default for MyApp {
       ui_state: UIState {
         left_panel_state: PanelState::Library,
         right_panel_state: PanelState::Reader,
+        reader_focus_mode: false,
         display_ofl_popup: false,
         display_raw_text: false,
       },
@@ -52,11 +52,7 @@ impl Default for MyApp {
       selected_book: None,
       selected_book_path: None,
       chapter_number: 0,
-      book_style: BookTextStyle {
-        font_family: FontFamily::Name("Merriweather".into()),
-        line_spacing_multiplier: 1.0,
-        ..Default::default()
-      },
+      book_style: BookTextStyle::default(),
       book_userdata: HashMap::new(),
       goto_target: None,
       theme: DocumentColors::default(),
@@ -204,11 +200,8 @@ fn main() {
     ..Default::default()
   };
   let native_options = NativeOptions {
-    // decorated: todo!(),
-    // drag_and_drop_support: todo!(),
-    // icon_data: todo!(),
-    // initial_window_size: todo!(),
-    ..Default::default()
-  };
+		min_window_size: Some(vec2(960.0, 540.0)),
+		..Default::default()
+	};
   run_native(Box::new(app), native_options)
 }
