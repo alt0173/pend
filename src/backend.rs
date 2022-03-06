@@ -106,24 +106,24 @@ pub fn parse_calibre(
 
 pub fn load_library(state: &mut MyApp) {
   // Finds all epub files in the user's library directory
-  for file_path in glob(&format!("{}/**/*.epub", state.library_path))
+  for file_path in glob(&format!("{}/**/*.epub", state.shelf_path))
     .unwrap()
     .flatten()
   {
     // Create a default "folder" / PathGroup if one is not already present
-    if state.library.is_empty() {
-      state.library.push(PathGroup::new("Books"));
+    if state.shelf.is_empty() {
+      state.shelf.push(PathGroup::new("Books"));
     }
 
     // Add file to library if not already added
     if !state
-      .library
+      .shelf
       .iter()
       .flat_map(|g| g.paths.clone())
       .collect::<Vec<PathBuf>>()
       .contains(&file_path)
     {
-      state.library[0].paths.push(file_path.clone());
+      state.shelf[0].paths.push(file_path.clone());
     }
     // Same thing for the book cover
     let mut doc = EpubDoc::new(&file_path).unwrap();

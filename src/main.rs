@@ -1,10 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // Hide console window on Windows in release
 
 mod backend;
+mod panels;
+pub use crate::panels::reader;
 mod ui;
-
-use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
-
 use backend::{LocalBookInfo, PathGroup};
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
@@ -15,14 +14,15 @@ use egui::vec2;
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
   ui_state: UIState,
-  library: Vec<PathGroup>,
-  library_path: String,
-  library_search: String,
+  shelf: Vec<PathGroup>,
+  shelf_path: String,
+  shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
   book_covers: HashMap<String, RetainedImage>,
@@ -41,15 +41,15 @@ impl Default for MyApp {
   fn default() -> Self {
     Self {
       ui_state: UIState {
-        left_panel_state: PanelState::Library,
+        left_panel_state: PanelState::Shelf,
         right_panel_state: PanelState::Reader,
         reader_focus_mode: false,
         display_ofl_popup: false,
         display_raw_text: false,
       },
-      library: Vec::new(),
-      library_path: "./library".into(),
-      library_search: String::new(),
+      shelf: Vec::new(),
+      shelf_path: "./library".into(),
+      shelf_search: String::new(),
       book_covers: HashMap::new(),
       selected_book: None,
       selected_book_path: None,
@@ -165,7 +165,7 @@ impl epi::App for MyApp {
     }
 
     // Loads book covers
-    for path in self.library.iter().flat_map(|g| &g.paths) {
+    for path in self.shelf.iter().flat_map(|g| &g.paths) {
       if let Ok(mut doc) = EpubDoc::new(path) {
         let title = doc.mdata("title").unwrap();
 
