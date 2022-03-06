@@ -5,7 +5,7 @@ mod ui;
 
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 
-use backend::LocalBookInfo;
+use backend::{LocalBookInfo, PathGroup};
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
   epaint::{FontFamily, Rounding},
@@ -20,7 +20,7 @@ use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState};
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
   ui_state: UIState,
-  library: Vec<PathBuf>,
+  library: Vec<PathGroup>,
   library_path: String,
   library_search: String,
   #[serde(skip_serializing)]
@@ -165,7 +165,7 @@ impl epi::App for MyApp {
     }
 
     // Loads book covers
-    for path in &self.library {
+    for path in self.library.iter().flat_map(|g| &g.paths) {
       if let Ok(mut doc) = EpubDoc::new(path) {
         let title = doc.mdata("title").unwrap();
 

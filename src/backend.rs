@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use egui::Color32;
 use egui_extras::RetainedImage;
@@ -34,6 +34,31 @@ impl LocalBookInfo {
       notes: Vec::new(),
       highlights: HashMap::new(),
       formatting_info: HashMap::new(),
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialOrd, Ord)]
+pub struct PathGroup {
+  pub name: String,
+  pub paths: Vec<PathBuf>,
+  pub renaming: bool,
+  pub desired_name: String,
+}
+
+impl PartialEq for PathGroup {
+  fn eq(&self, other: &Self) -> bool {
+    self.name == other.name
+  }
+}
+
+impl PathGroup {
+  pub fn new(name: &str) -> Self {
+    Self {
+      name: name.to_string(),
+      paths: Vec::new(),
+      renaming: false,
+      desired_name: String::new(),
     }
   }
 }
@@ -85,9 +110,20 @@ pub fn load_library(state: &mut MyApp) {
     .unwrap()
     .flatten()
   {
+    // Create a default "folder" / PathGroup if one is not already present
+    if state.library.is_empty() {
+      state.library.push(PathGroup::new("Books"));
+    }
+
     // Add file to library if not already added
-    if !state.library.contains(&file_path) {
-      state.library.push(file_path.clone());
+    if !state
+      .library
+      .iter()
+      .flat_map(|g| g.paths.clone())
+      .collect::<Vec<PathBuf>>()
+      .contains(&file_path)
+    {
+      state.library[0].paths.push(file_path.clone());
     }
     // Same thing for the book cover
     let mut doc = EpubDoc::new(&file_path).unwrap();
