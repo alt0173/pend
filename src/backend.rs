@@ -38,7 +38,7 @@ impl LocalBookInfo {
   }
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct PathGroup {
   pub name: String,
   pub paths: Vec<PathBuf>,

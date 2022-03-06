@@ -280,6 +280,16 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 									state.selected_book = None;
 									state.selected_book_path = None;
 								}
+								if ui.button("New Shelf").clicked() {
+									let mut shelf_number = state.library.len();
+									let shelf_names = state.library.iter().map(|g| g.name.clone()).collect::<Vec<String>>();
+
+									// Prevents duplicate names
+									while shelf_names.contains(&format!("Shelf {}", shelf_number)) {
+										shelf_number += 1;
+									}
+									state.library.push(PathGroup::new(&format!("Shelf {}", shelf_number)));
+								}
 
 								ui.separator();
 
@@ -366,13 +376,11 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 
 							if !remove_queue.is_empty() && state.library.len() > 1 {
 								for name in remove_queue.iter() {
-									let index = state.library.binary_search(&PathGroup::new(name)).unwrap();
-
-									for path in &state.library[index].paths.clone() {
-										state.library[0].paths.push(path.to_path_buf());
+									for (index, path_group) in state.library.clone().iter().enumerate() {
+										if &path_group.name == name {
+											state.library.remove(index);
+										}
 									}
-
-									state.library.remove(index);
 								}
 								remove_queue.clear();
 							}
