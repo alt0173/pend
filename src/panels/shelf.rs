@@ -16,14 +16,10 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     }
     if ui.button("New Shelf").clicked() {
       let mut shelf_number = state.shelf.len();
-      let shelf_names = state
-        .shelf
-        .iter()
-        .map(|g| g.name.clone())
-        .collect::<Vec<String>>();
+      let mut shelf_names = state.shelf.iter().map(|g| g.name.clone());
 
       // Prevents duplicate names
-      while shelf_names.contains(&format!("Shelf {}", shelf_number)) {
+      while shelf_names.any(|x| x == format!("Shelf {}", shelf_number)) {
         shelf_number += 1;
       }
       state

@@ -79,7 +79,7 @@ pub fn parse_calibre(
       for capture in captures.iter().flatten() {
         if let Some(format) = match capture.as_str() {
           x if x.contains("title") => Some(FormattingInfo::Title),
-          x if x.contains("h") => Some(FormattingInfo::Heading),
+          x if x.contains('h') => Some(FormattingInfo::Heading),
           x if x.contains("h2") => Some(FormattingInfo::Heading),
           _ => None,
         } {
@@ -120,8 +120,7 @@ pub fn load_library(state: &mut MyApp) {
       .shelf
       .iter()
       .flat_map(|g| g.paths.clone())
-      .collect::<Vec<PathBuf>>()
-      .contains(&file_path)
+      .any(|x| x == file_path)
     {
       state.shelf[0].paths.push(file_path.clone());
     }

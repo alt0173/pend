@@ -76,12 +76,12 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
           let contents = parse_calibre(
             &book.get_current_str().unwrap(),
             book.get_current_page(),
-            &mut state
+            state
               .book_userdata
               .get_mut(state.selected_book_path.as_ref().unwrap())
               .unwrap(),
           );
-          let contents: Vec<&str> = contents.lines().collect();
+          let contents = contents.lines();
 
           // Background
           ui.painter()
@@ -111,7 +111,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                       .highlights
                       .get(&(state.chapter_number, line_number))
                     {
-                      color.clone()
+                      *color
                     } else {
                       Color32::TRANSPARENT
                     },

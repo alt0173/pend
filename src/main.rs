@@ -35,6 +35,9 @@ pub struct MyApp {
   book_userdata: HashMap<PathBuf, LocalBookInfo>,
   goto_target: Option<Note>,
   theme: DocumentColors,
+  #[serde(skip_serializing)]
+  #[serde(skip_deserializing)]
+  dragged_book: Option<(PathBuf, RetainedImage)>,
 }
 
 impl Default for MyApp {
@@ -58,6 +61,7 @@ impl Default for MyApp {
       book_userdata: HashMap::new(),
       goto_target: None,
       theme: DocumentColors::default(),
+      dragged_book: None,
     }
   }
 }

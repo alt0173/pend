@@ -49,7 +49,7 @@ impl Default for BookTextStyle {
 }
 
 // The PartiqlOrd derive may lead to issues?
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialOrd)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq)]
 pub struct Note {
   pub chapter: u16,
   pub line: u16,
@@ -60,6 +60,12 @@ pub struct Note {
 impl PartialEq for Note {
   fn eq(&self, other: &Self) -> bool {
     self.chapter == other.chapter && self.line == other.line
+  }
+}
+
+impl PartialOrd for Note {
+  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    Some(self.cmp(other))
   }
 }
 
@@ -110,7 +116,7 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 		let area_height = ui.available_height();
     let mut left_panel_width = 0.0;
 
-		// Popups
+		// Popups / etc.
   	if state.ui_state.display_ofl_popup {
     egui::Window::new("Acknowledgements")
 			.title_bar(false)
@@ -152,6 +158,11 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 				})
 			});
   }
+
+		// If a book is being dragged
+		// if let Some((path, cover)) = state.dragged_book.as_ref() {
+
+		// };
 
 		// Panels
 		if !state.ui_state.reader_focus_mode || state.selected_book.is_none() {
