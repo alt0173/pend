@@ -38,7 +38,7 @@ impl LocalBookInfo {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialOrd, Eq, Ord)]
 pub struct PathGroup {
   pub name: String,
   pub paths: Vec<PathBuf>,
@@ -61,6 +61,30 @@ impl PathGroup {
       desired_name: String::new(),
     }
   }
+
+	/// Removes an entry in paths by path
+	pub fn remove_path(&mut self, path: PathBuf) {
+		if let Ok(index) = self.paths.binary_search(&path) {
+			self.paths.remove(index);
+		}
+	}
+}
+
+#[derive(PartialEq, Clone)]
+pub struct DraggedBook {
+	pub path: PathBuf,
+	pub title: String,
+	pub source_shelf_title: String,
+}
+
+impl DraggedBook {
+	pub fn new(path: PathBuf, title: String, source_shelf_title: String) -> Self {
+		Self {
+			path,
+			title,
+			source_shelf_title,
+		}
+	}
 }
 
 pub fn parse_calibre(
@@ -106,10 +130,22 @@ pub fn parse_calibre(
 
 pub fn load_library(state: &mut MyApp) {
   // Finds all epub files in the user's library directory
-  for file_path in glob(&format!("{}/**/*.epub", state.shelf_path))
+  for file_path in glob(&format!("{}/**/*.epub", state.library_path))
     .unwrap()
     .flatten()
   {
+    // Fallback image
+    if !state.book_covers.contains_key("fallback") {
+      state.book_covers.insert(
+        "fallback".to_string(),
+        RetainedImage::from_image_bytes(
+          "fallback",
+          include_bytes!("../compiletime_resources/fallback.png"),
+        )
+        .unwrap(),
+      );
+    }
+
     // Create a default "folder" / PathGroup if one is not already present
     if state.shelf.is_empty() {
       state.shelf.push(PathGroup::new("Books"));

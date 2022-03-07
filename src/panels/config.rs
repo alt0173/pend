@@ -2,17 +2,30 @@ use std::sync::Arc;
 
 use egui::{ComboBox, FontFamily, TextEdit};
 
-use crate::ui::{BookTextStyle, DocumentColors};
+use crate::{
+  backend::load_library,
+  ui::{BookTextStyle, DocumentColors},
+};
 
 pub fn config_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   ui.collapsing("Program", |ui| {
     // Path to directory containing books
     ui.horizontal(|ui| {
       ui.label("Library Path:");
-      TextEdit::singleline(&mut state.shelf_path)
+      TextEdit::singleline(&mut state.library_path)
         .hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
         .show(ui);
     });
+
+    if ui.button("Force Load Library").clicked() {
+      load_library(state);
+    }
+    if ui.button("Force Clear Library").clicked() {
+      state.shelf.clear();
+      state.book_covers.clear();
+      state.selected_book = None;
+      state.selected_book_path = None;
+    }
 
     ui.checkbox(&mut state.ui_state.reader_focus_mode, "Focus Mode");
   });

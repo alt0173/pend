@@ -4,7 +4,7 @@ mod backend;
 mod panels;
 pub use crate::panels::reader;
 mod ui;
-use backend::{LocalBookInfo, PathGroup};
+use backend::{LocalBookInfo, PathGroup, DraggedBook};
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
   epaint::{FontFamily, Rounding},
@@ -21,7 +21,7 @@ use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState};
 pub struct MyApp {
   ui_state: UIState,
   shelf: Vec<PathGroup>,
-  shelf_path: String,
+  library_path: String,
   shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
@@ -35,9 +35,10 @@ pub struct MyApp {
   book_userdata: HashMap<PathBuf, LocalBookInfo>,
   goto_target: Option<Note>,
   theme: DocumentColors,
+  book_cover_size: f32,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
-  dragged_book: Option<(PathBuf, RetainedImage)>,
+  dragged_book: Option<DraggedBook>,
 }
 
 impl Default for MyApp {
@@ -51,7 +52,7 @@ impl Default for MyApp {
         display_raw_text: false,
       },
       shelf: Vec::new(),
-      shelf_path: "./library".into(),
+      library_path: "./library".into(),
       shelf_search: String::new(),
       book_covers: HashMap::new(),
       selected_book: None,
@@ -61,6 +62,7 @@ impl Default for MyApp {
       book_userdata: HashMap::new(),
       goto_target: None,
       theme: DocumentColors::default(),
+      book_cover_size: 140.0,
       dragged_book: None,
     }
   }
@@ -193,7 +195,7 @@ impl epi::App for MyApp {
 
   // Name of the process
   fn name(&self) -> &str {
-    "Lisci"
+    "Swag book reading software beta 0.1"
   }
   // Prevents single instance of un-layedout text
   fn warm_up_enabled(&self) -> bool {
