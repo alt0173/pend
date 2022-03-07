@@ -4,7 +4,7 @@ mod backend;
 mod panels;
 pub use crate::panels::reader;
 mod ui;
-use backend::{LocalBookInfo, PathGroup, DraggedBook};
+use backend::{DraggedBook, LocalBookInfo, PathGroup};
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
   epaint::{FontFamily, Rounding},
@@ -20,8 +20,8 @@ use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState};
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
   ui_state: UIState,
-  shelf: Vec<PathGroup>,
   library_path: String,
+  shelf: Vec<PathGroup>,
   shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
@@ -51,8 +51,8 @@ impl Default for MyApp {
         display_ofl_popup: false,
         display_raw_text: false,
       },
-      shelf: Vec::new(),
       library_path: "./library".into(),
+      shelf: Vec::new(),
       shelf_search: String::new(),
       book_covers: HashMap::new(),
       selected_book: None,

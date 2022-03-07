@@ -62,29 +62,29 @@ impl PathGroup {
     }
   }
 
-	/// Removes an entry in paths by path
-	pub fn remove_path(&mut self, path: PathBuf) {
-		if let Ok(index) = self.paths.binary_search(&path) {
-			self.paths.remove(index);
-		}
-	}
+  /// Removes an entry in paths by path
+  pub fn remove_path(&mut self, path: PathBuf) {
+    if let Ok(index) = self.paths.binary_search(&path) {
+      self.paths.remove(index);
+    }
+  }
 }
 
 #[derive(PartialEq, Clone)]
 pub struct DraggedBook {
-	pub path: PathBuf,
-	pub title: String,
-	pub source_shelf_title: String,
+  pub path: PathBuf,
+  pub title: String,
+  pub source_shelf_title: String,
 }
 
 impl DraggedBook {
-	pub fn new(path: PathBuf, title: String, source_shelf_title: String) -> Self {
-		Self {
-			path,
-			title,
-			source_shelf_title,
-		}
-	}
+  pub fn new(path: PathBuf, title: String, source_shelf_title: String) -> Self {
+    Self {
+      path,
+      title,
+      source_shelf_title,
+    }
+  }
 }
 
 pub fn parse_calibre(

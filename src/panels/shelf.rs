@@ -1,9 +1,7 @@
-use std::{fmt::format, path::PathBuf};
-
 use egui::{vec2, RichText, Sense, TextEdit, TextStyle};
 use epub::doc::EpubDoc;
 
-use crate::backend::{load_library, PathGroup, DraggedBook};
+use crate::backend::{load_library, DraggedBook, PathGroup};
 
 pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   ui.horizontal(|ui| {
@@ -47,6 +45,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     .collect::<Vec<String>>();
 
   let mut dropped_book: Option<DraggedBook> = None;
+  // Loops over books and handles display / etc.
   for path_group in state.shelf.iter_mut() {
     let response = ui.collapsing(&path_group.name, |ui| {
       egui::Grid::new(&path_group.name).show(ui, |ui| {
@@ -61,6 +60,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
             {
               // Display the cover & info
               ui.vertical_centered(|ui| {
+                // Cover
                 let response = ui.add(
                   egui::ImageButton::new(
                     state
@@ -73,14 +73,20 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                   .sense(Sense::drag()),
                 );
 
+                // Drag stuff
                 if response.drag_started() {
-                  state.dragged_book = Some(DraggedBook::new (path.clone(), title.clone(), path_group.name.clone()));
+                  state.dragged_book = Some(DraggedBook::new(
+                    path.clone(),
+                    title.clone(),
+                    path_group.name.clone(),
+                  ));
                 }
                 if response.drag_released() {
                   dropped_book = state.dragged_book.clone();
                   state.dragged_book = None;
                 }
 
+                // Selection
                 if response.clicked()
                   && state.selected_book_path != Some(path.to_path_buf())
                 {
@@ -89,6 +95,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                   state.chapter_number = 1;
                 }
 
+                // Display info
                 ui.label(RichText::new(title).text_style(TextStyle::Body));
                 if let Some(author) = doc.mdata("creator") {
                   ui.label(RichText::new(author).text_style(TextStyle::Body));
@@ -97,9 +104,12 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
             }
           }
         }
-			});
+      });
     });
 
+    ui.label("SNEEGUS");
+
+    // Header interaction
     response.header_response.context_menu(|ui| {
       if ui.button("Rename").clicked() {
         path_group.renaming = true;
@@ -109,6 +119,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       }
     });
 
+    // Rename stuff
     let current_name = &mut path_group.name;
     if path_group.renaming {
       egui::Window::new("Shelf Renamer")
@@ -155,9 +166,9 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
           }
 
           // Remove the book from it's previous shelf
-					for path_group in state.shelf.iter_mut() {
-						path_group.remove_path(book.path.clone());
-					}
+          for path_group in state.shelf.iter_mut() {
+            path_group.remove_path(book.path.clone());
+          }
 
           // Create the new shelf with the dragged book
           state.shelf.push({
