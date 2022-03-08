@@ -74,7 +74,7 @@ impl PathGroup {
 pub struct DraggedBook {
   pub path: PathBuf,
   pub title: String,
-  pub source_shelf_title: String,
+  pub source_shelf_name: String,
 }
 
 impl DraggedBook {
@@ -82,7 +82,7 @@ impl DraggedBook {
     Self {
       path,
       title,
-      source_shelf_title,
+      source_shelf_name: source_shelf_title,
     }
   }
 }

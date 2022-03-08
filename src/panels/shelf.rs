@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use egui::{vec2, RichText, Sense, TextEdit, TextStyle};
 use epub::doc::EpubDoc;
 
@@ -14,21 +16,6 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         .hint_text("Path to books...")
         .show(ui);
     } else {
-      if ui.button("New Shelf").clicked() {
-        let mut shelf_number = state.shelf.len();
-        let mut shelf_names = state.shelf.iter().map(|g| g.name.clone());
-
-        // Prevents duplicate names
-        while shelf_names.any(|x| x == format!("Shelf {}", shelf_number)) {
-          shelf_number += 1;
-        }
-        state
-          .shelf
-          .push(PathGroup::new(&format!("Shelf {}", shelf_number)));
-      }
-
-      ui.separator();
-
       TextEdit::singleline(&mut state.shelf_search)
         .hint_text("Search Library...")
         .show(ui);
@@ -37,7 +24,8 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   ui.separator();
 
   // Avoids borrowing issues
-  let mut remove_queue: Vec<String> = Vec::new();
+  let mut path_group_remove_queue: Vec<String> = Vec::new();
+  let mut book_remove_queue: Vec<(String, PathBuf)> = Vec::new();
   let path_group_names = state
     .shelf
     .iter()
@@ -49,7 +37,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   for path_group in state.shelf.iter_mut() {
     let response = ui.collapsing(&path_group.name, |ui| {
       egui::Grid::new(&path_group.name).show(ui, |ui| {
-        for path in &path_group.paths {
+        for (index, path) in path_group.paths.iter().enumerate() {
           if let Ok(doc) = EpubDoc::new(path) {
             let title = doc.mdata("title").unwrap();
             let author = doc.mdata("creator").unwrap();
@@ -102,12 +90,31 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                 }
               });
             }
+
+            // Controls number of columns
+            if (index + 1) % 5 == 0 {
+              ui.end_row();
+            }
           }
         }
       });
     });
 
-    ui.label("SNEEGUS");
+    // For drag & dropping books into other shelves
+    if let Some(response) = response.body_response {
+      if let Some(book) = &dropped_book {
+        if response
+          .rect
+          .contains(ui.ctx().pointer_hover_pos().unwrap())
+          && ui.ctx().input().pointer.any_released()
+          && path_group.name != book.source_shelf_name
+        {
+          book_remove_queue
+            .push((book.source_shelf_name.clone(), book.path.clone()));
+          path_group.paths.push(book.path.clone());
+        }
+      }
+    }
 
     // Header interaction
     response.header_response.context_menu(|ui| {
@@ -115,7 +122,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         path_group.renaming = true;
       }
       if ui.button("Remove").clicked() {
-        remove_queue.push(path_group.name.clone());
+        path_group_remove_queue.push(path_group.name.clone());
       }
     });
 
@@ -182,14 +189,25 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     });
   }
 
-  if !remove_queue.is_empty() && state.shelf.len() > 1 {
-    for name in remove_queue.iter() {
+  // Executes scheduled removal of Books (PathBufs)
+  if !book_remove_queue.is_empty() {
+    for (shelf_name, path) in book_remove_queue.iter() {
+      for shelf in state.shelf.iter_mut().find(|s| &s.name == shelf_name) {
+        shelf.remove_path(path.into());
+      }
+    }
+    book_remove_queue.clear();
+  }
+
+  // Executes scheduled removal of PathGroups
+  if !path_group_remove_queue.is_empty() && state.shelf.len() > 1 {
+    for name in path_group_remove_queue.iter() {
       for (index, path_group) in state.shelf.clone().iter().enumerate() {
         if &path_group.name == name {
           state.shelf.remove(index);
         }
       }
     }
-    remove_queue.clear();
+    path_group_remove_queue.clear();
   }
 }
