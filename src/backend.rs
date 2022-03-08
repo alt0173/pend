@@ -70,23 +70,6 @@ impl PathGroup {
   }
 }
 
-#[derive(PartialEq, Clone)]
-pub struct DraggedBook {
-  pub path: PathBuf,
-  pub title: String,
-  pub source_shelf_name: String,
-}
-
-impl DraggedBook {
-  pub fn new(path: PathBuf, title: String, source_shelf_title: String) -> Self {
-    Self {
-      path,
-      title,
-      source_shelf_name: source_shelf_title,
-    }
-  }
-}
-
 pub fn parse_calibre(
   input: &str,
   chapter: usize,

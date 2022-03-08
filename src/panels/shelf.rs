@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use egui::{vec2, RichText, Sense, TextEdit, TextStyle};
 use epub::doc::EpubDoc;
 
-use crate::backend::{load_library, DraggedBook, PathGroup};
+use crate::backend::{load_library, PathGroup};
 
 pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   ui.horizontal(|ui| {
@@ -32,7 +32,6 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     .map(|g| g.name.clone())
     .collect::<Vec<String>>();
 
-  let mut dropped_book: Option<DraggedBook> = None;
   // Loops over books and handles display / etc.
   for path_group in state.shelf.iter_mut() {
     let response = ui.collapsing(&path_group.name, |ui| {
@@ -58,21 +57,8 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                       .texture_id(ui.ctx()),
                     vec2(state.book_cover_size, state.book_cover_size * 1.6),
                   )
-                  .sense(Sense::drag()),
+                  .sense(Sense::click()),
                 );
-
-                // Drag stuff
-                if response.drag_started() {
-                  state.dragged_book = Some(DraggedBook::new(
-                    path.clone(),
-                    title.clone(),
-                    path_group.name.clone(),
-                  ));
-                }
-                if response.drag_released() {
-                  dropped_book = state.dragged_book.clone();
-                  state.dragged_book = None;
-                }
 
                 // Selection
                 if response.clicked()
@@ -99,22 +85,6 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         }
       });
     });
-
-    // For drag & dropping books into other shelves
-    if let Some(response) = response.body_response {
-      if let Some(book) = &dropped_book {
-        if response
-          .rect
-          .contains(ui.ctx().pointer_hover_pos().unwrap())
-          && ui.ctx().input().pointer.any_released()
-          && path_group.name != book.source_shelf_name
-        {
-          book_remove_queue
-            .push((book.source_shelf_name.clone(), book.path.clone()));
-          path_group.paths.push(book.path.clone());
-        }
-      }
-    }
 
     // Header interaction
     response.header_response.context_menu(|ui| {
@@ -154,39 +124,6 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
           }
         });
     }
-  }
-
-  if state.dragged_book.is_some() || dropped_book.is_some() {
-    ui.centered_and_justified(|ui| {
-      if ui
-        .button("New Shelf")
-        .rect
-        .contains(ui.ctx().pointer_hover_pos().unwrap())
-      {
-        if let Some(book) = dropped_book {
-          let mut shelf_number = state.shelf.len();
-          let mut shelf_names = state.shelf.iter().map(|g| g.name.clone());
-
-          // Prevents duplicate shelf names
-          while shelf_names.any(|x| x == format!("Shelf {}", shelf_number)) {
-            shelf_number += 1;
-          }
-
-          // Remove the book from it's previous shelf
-          for path_group in state.shelf.iter_mut() {
-            path_group.remove_path(book.path.clone());
-          }
-
-          // Create the new shelf with the dragged book
-          state.shelf.push({
-            let mut group = PathGroup::new(&format!("Shelf {}", shelf_number));
-            group.paths.push(book.path.clone());
-
-            group
-          });
-        }
-      }
-    });
   }
 
   // Executes scheduled removal of Books (PathBufs)

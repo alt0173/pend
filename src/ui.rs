@@ -159,23 +159,6 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 			});
   	}
 
-		// If a book is being dragged
-		if let Some(book) = state.dragged_book.as_ref() {
-			let title = &book.title;
-
-			// Makes sure the mouse is in the window
-			if let Some(mouse_position) = ui.ctx().pointer_hover_pos() {
-				let size = state.book_cover_size;
-
-				ui.put(
-					egui::Rect::from_center_size(mouse_position + vec2(size / 2.0 + 1.0, size * 0.8 + 1.0), vec2(size, size * 1.6)),
-					egui::Image::new(
-						state.book_covers.get(title).unwrap_or(state.book_covers.get("fallback").unwrap()).texture_id(ui.ctx()),
-						vec2(size, size * 1.6))
-				);
-			}
-		}
-
 		// Panels
 		if !state.ui_state.reader_focus_mode || state.selected_book.is_none() {
 			egui::SidePanel::left("Left Panel")

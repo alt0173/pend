@@ -4,7 +4,7 @@ mod backend;
 mod panels;
 pub use crate::panels::reader;
 mod ui;
-use backend::{DraggedBook, LocalBookInfo, PathGroup};
+use backend::{LocalBookInfo, PathGroup};
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
   epaint::{FontFamily, Rounding},
@@ -36,9 +36,6 @@ pub struct MyApp {
   goto_target: Option<Note>,
   theme: DocumentColors,
   book_cover_size: f32,
-  #[serde(skip_serializing)]
-  #[serde(skip_deserializing)]
-  dragged_book: Option<DraggedBook>,
 }
 
 impl Default for MyApp {
@@ -63,7 +60,6 @@ impl Default for MyApp {
       goto_target: None,
       theme: DocumentColors::default(),
       book_cover_size: 140.0,
-      dragged_book: None,
     }
   }
 }
