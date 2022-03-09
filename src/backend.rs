@@ -62,7 +62,7 @@ impl PathGroup {
     }
   }
 
-  /// Removes an entry in paths by path
+  /// Removes the first occurance of a given PathBuf in the PathGroup
   pub fn remove_path(&mut self, path: PathBuf) {
     if let Ok(index) = self.paths.binary_search(&path) {
       self.paths.remove(index);
@@ -130,18 +130,18 @@ pub fn load_library(state: &mut MyApp) {
     }
 
     // Create a default "folder" / PathGroup if one is not already present
-    if state.shelf.is_empty() {
-      state.shelf.push(PathGroup::new("Books"));
+    if state.shelves.is_empty() {
+      state.shelves.push(PathGroup::new("Books"));
     }
 
     // Add file to library if not already added
     if !state
-      .shelf
+      .shelves
       .iter()
       .flat_map(|g| g.paths.clone())
       .any(|x| x == file_path)
     {
-      state.shelf[0].paths.push(file_path.clone());
+      state.shelves[0].paths.push(file_path.clone());
     }
     // Same thing for the book cover
     let mut doc = EpubDoc::new(&file_path).unwrap();

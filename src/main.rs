@@ -21,7 +21,7 @@ use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState};
 pub struct MyApp {
   ui_state: UIState,
   library_path: String,
-  shelf: Vec<PathGroup>,
+  shelves: Vec<PathGroup>,
   shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
@@ -35,7 +35,9 @@ pub struct MyApp {
   book_userdata: HashMap<PathBuf, LocalBookInfo>,
   goto_target: Option<Note>,
   theme: DocumentColors,
-  book_cover_size: f32,
+  book_cover_width: f32,
+  /// Path, title
+  dragged_book: Option<(PathBuf, String)>,
 }
 
 impl Default for MyApp {
@@ -49,7 +51,7 @@ impl Default for MyApp {
         display_raw_text: false,
       },
       library_path: "./library".into(),
-      shelf: Vec::new(),
+      shelves: Vec::new(),
       shelf_search: String::new(),
       book_covers: HashMap::new(),
       selected_book: None,
@@ -59,7 +61,8 @@ impl Default for MyApp {
       book_userdata: HashMap::new(),
       goto_target: None,
       theme: DocumentColors::default(),
-      book_cover_size: 140.0,
+      book_cover_width: 140.0,
+      dragged_book: None,
     }
   }
 }
@@ -167,7 +170,7 @@ impl epi::App for MyApp {
     }
 
     // Loads book covers
-    for path in self.shelf.iter().flat_map(|g| &g.paths) {
+    for path in self.shelves.iter().flat_map(|g| &g.paths) {
       if let Ok(mut doc) = EpubDoc::new(path) {
         let title = doc.mdata("title").unwrap();
 

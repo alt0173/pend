@@ -21,7 +21,7 @@ pub fn config_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       load_library(state);
     }
     if ui.button("Force Clear Library").clicked() {
-      state.shelf.clear();
+      state.shelves.clear();
       state.book_covers.clear();
       state.selected_book = None;
       state.selected_book_path = None;
