@@ -4,6 +4,7 @@ use epub::doc::EpubDoc;
 use crate::backend::load_library;
 
 pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
+  // Top menu bar
   ui.horizontal(|ui| {
     if state.shelves.is_empty() {
       if ui.button("Load Library").clicked() {
@@ -72,24 +73,26 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     });
   }
 
-  // Image for book drag
-  // Note that this must be after everything else in this ui to ensure it be drawn on top
-  if let Some((_, title)) = &state.dragged_book {
-    if let Some(mouse_position) = ui.ctx().pointer_hover_pos() {
-      let size = vec2(state.book_cover_width, state.book_cover_width * 1.6);
-      let image = egui::Image::new(
-        state
-          .book_covers
-          .get(title)
-          .unwrap_or(state.book_covers.get("fallback").unwrap())
-          .texture_id(ui.ctx()),
-        size,
-      );
+  // Dhows the cover of the book currently being dragged
+  match (&state.dragged_book, ui.ctx().pointer_hover_pos()) {
+    (Some((_, title)), Some(mouse_position)) => {
+      egui::Area::new("Book Cover Drag Area")
+        .fixed_pos(mouse_position)
+        .order(egui::Order::Foreground)
+        .show(ui.ctx(), |ui| {
+          let image_size =
+            vec2(state.book_cover_width, state.book_cover_width * 1.6);
 
-      ui.put(
-        egui::Rect::from_min_max(mouse_position, mouse_position + size),
-        image,
-      );
+          ui.image(
+            state
+              .book_covers
+              .get(title)
+              .unwrap_or(state.book_covers.get("fallback").unwrap())
+              .texture_id(ui.ctx()),
+            image_size,
+          );
+        });
     }
+    _ => {}
   }
 }
