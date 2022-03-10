@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use egui::{vec2, TextEdit};
 use epub::doc::EpubDoc;
 
@@ -56,9 +58,6 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
             if cover_response.drag_started() {
               state.dragged_book = Some((path.to_path_buf(), title));
             }
-            if cover_response.drag_released() {
-              state.dragged_book = None;
-            }
 
             // Context menu
             cover_response.context_menu(|ui| {
@@ -73,7 +72,18 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     });
   }
 
-  // Dhows the cover of the book currently being dragged
+  if state.dragged_book.is_some() {
+    ui.centered_and_justified(|ui| {
+      if ui.button("New Shelf").clicked() {};
+    });
+  }
+
+  // If dragged book is Some (not already consumed) and mouse button released, set it to None
+  if ui.ctx().input().pointer.any_released() && state.dragged_book.is_some() {
+    state.dragged_book = None;
+  }
+
+  // Shows the cover of the book currently being dragged
   match (&state.dragged_book, ui.ctx().pointer_hover_pos()) {
     (Some((_, title)), Some(mouse_position)) => {
       egui::Area::new("Book Cover Drag Area")
