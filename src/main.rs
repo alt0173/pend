@@ -36,8 +36,8 @@ pub struct MyApp {
   goto_target: Option<Note>,
   theme: DocumentColors,
   book_cover_width: f32,
-  /// Path, title
-  dragged_book: Option<(PathBuf, String)>,
+  /// Path, original shelf name, title
+  dragged_book: Option<(PathBuf, String, String)>,
 }
 
 impl Default for MyApp {

@@ -1,9 +1,7 @@
-use std::time::Instant;
-
 use egui::{vec2, TextEdit};
 use epub::doc::EpubDoc;
 
-use crate::backend::load_library;
+use crate::backend::{load_library, PathGroup};
 
 pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   // Top menu bar
@@ -56,13 +54,14 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
             }
 
             if cover_response.drag_started() {
-              state.dragged_book = Some((path.to_path_buf(), title));
+              state.dragged_book =
+                Some((path.to_path_buf(), title, path_group.name.clone()));
             }
 
             // Context menu
             cover_response.context_menu(|ui| {
               if ui.button("Remove").clicked() {
-                state.shelves[shelf_index].remove_path(path.to_path_buf());
+                state.shelves[shelf_index].paths.retain(|p| p != path);
                 ui.close_menu();
               }
             });
@@ -72,20 +71,49 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     });
   }
 
-  if state.dragged_book.is_some() {
-    ui.centered_and_justified(|ui| {
-      if ui.button("New Shelf").clicked() {};
-    });
+  // Shelf addition
+  if let Some(mouse_position) = ui.ctx().pointer_hover_pos() {
+    if let Some((path, _, old_shelf_name)) = &state.dragged_book {
+      ui.centered_and_justified(|ui| {
+        if ui.button("New Shelf").rect.contains(mouse_position)
+          && ui.ctx().input().pointer.any_released()
+        {
+          // Find the shelf the path is in and remove the path from it
+          state
+            .shelves
+            .iter_mut()
+            .find(|s| s.name == *old_shelf_name)
+            .unwrap()
+            .paths
+            .retain(|p| p != path);
+          // Create new shelf
+          // Ensure that the name of the new PathGroup will be unique
+          let mut shelf_number: u16 = 1;
+          let mut shelf_name = String::from("Shelf 1");
+
+          // PathGroup comparrision works soley on name, so it's easy to
+          // search for potential name collisions
+          while state.shelves.contains(&PathGroup::new(&shelf_name)) {
+            shelf_name = format!("Shelf {}", shelf_number);
+            shelf_number += 1;
+          }
+
+          // Create shelf with name, add book to it, and push it
+					let shelf = PathGroup::new_with_contents(shelf_name, Vec::from([path.clone()]));
+          state.shelves.push(shelf);
+        };
+      });
+    }
   }
 
-  // If dragged book is Some (not already consumed) and mouse button released, set it to None
+  // If dragged book is Some (not already set to None) and mouse button released: set it to None
   if ui.ctx().input().pointer.any_released() && state.dragged_book.is_some() {
     state.dragged_book = None;
   }
 
   // Shows the cover of the book currently being dragged
   match (&state.dragged_book, ui.ctx().pointer_hover_pos()) {
-    (Some((_, title)), Some(mouse_position)) => {
+    (Some((_, title, _)), Some(mouse_position)) => {
       egui::Area::new("Book Cover Drag Area")
         .fixed_pos(mouse_position)
         .order(egui::Order::Foreground)

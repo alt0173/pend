@@ -53,21 +53,23 @@ impl PartialEq for PathGroup {
 }
 
 impl PathGroup {
-  pub fn new(name: &str) -> Self {
+  pub fn new<S: Into<String>>(name: S) -> Self {
     Self {
-      name: name.to_string(),
+      name: name.into(),
       paths: Vec::new(),
       renaming: false,
       desired_name: String::new(),
     }
   }
 
-  /// Removes the first occurance of a given PathBuf in the PathGroup
-  pub fn remove_path(&mut self, path: PathBuf) {
-    if let Ok(index) = self.paths.binary_search(&path) {
-      self.paths.remove(index);
-    }
-  }
+	pub fn new_with_contents<S: Into<String>>(name: S, paths: Vec<PathBuf>) -> Self {
+		Self {
+			name: name.into(),
+			paths,
+			renaming: false,
+			desired_name: String::new(),
+		}
+	}
 }
 
 pub fn parse_calibre(
