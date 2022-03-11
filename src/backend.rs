@@ -86,13 +86,16 @@ pub fn parse_calibre(
   for (line_number, line) in input.lines().enumerate() {
     let rx = Regex::new(r"<(.*?)>").unwrap();
 
-    // Important
+    // Processes the parsed HTML, (Using my custom, bad, parsing, which is very
+    // imperfect to say the least) and converts it into formatting info
     for captures in rx.captures_iter(line) {
       for capture in captures.iter().flatten() {
         if let Some(format) = match capture.as_str() {
           x if x.contains("title") => Some(FormattingInfo::Title),
           x if x.contains('h') => Some(FormattingInfo::Heading),
-          x if x.contains("h2") => Some(FormattingInfo::Heading),
+          x if x.contains("h2") => Some(FormattingInfo::Heading2),
+          x if x.contains("i") => Some(FormattingInfo::Italic),
+          x if x.contains("b") => Some(FormattingInfo::Bold),
           _ => None,
         } {
           book_info
