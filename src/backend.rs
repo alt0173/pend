@@ -62,14 +62,17 @@ impl PathGroup {
     }
   }
 
-	pub fn new_with_contents<S: Into<String>>(name: S, paths: Vec<PathBuf>) -> Self {
-		Self {
-			name: name.into(),
-			paths,
-			renaming: false,
-			desired_name: String::new(),
-		}
-	}
+  pub fn new_with_contents<S: Into<String>>(
+    name: S,
+    paths: Vec<PathBuf>,
+  ) -> Self {
+    Self {
+      name: name.into(),
+      paths,
+      renaming: false,
+      desired_name: String::new(),
+    }
+  }
 }
 
 pub fn parse_calibre(

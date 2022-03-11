@@ -27,7 +27,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     ui.collapsing(path_group.name.clone(), |ui| {
       ui.horizontal_wrapped(|ui| {
         // Loop over all paths within a shelf
-        for (index, path) in path_group.paths.iter().enumerate() {
+        for (path_index, path) in path_group.paths.iter().enumerate() {
           // Ensure the path leads to a valid epub document
           if let Ok(doc) = EpubDoc::new(path) {
             let title =
@@ -51,6 +51,37 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
               state.selected_book = Some(EpubDoc::new(path).unwrap());
               state.selected_book_path = Some(path.to_path_buf());
               state.chapter_number = 1;
+            }
+
+            match (
+              ui.ctx().pointer_hover_pos(),
+              state.dragged_book.as_ref(),
+              ui.ctx().input().pointer.any_released(),
+            ) {
+              (
+                Some(mouse_position),
+                Some((dragged_path, _title, old_shelf_name)),
+                true,
+              ) => {
+                if cover_response.rect.contains(mouse_position) {
+                  // Find the shelf the dragged book's path is in and remove the path from it
+                  state
+                    .shelves
+                    .iter_mut()
+                    .find(|s| s.name == *old_shelf_name)
+                    .unwrap()
+                    .paths
+                    .retain(|p| p != dragged_path);
+
+                  // Add path to shelf after this book
+                  state.shelves[shelf_index]
+                    .paths
+                    .insert(path_index, dragged_path.clone());
+
+                  state.dragged_book = None;
+                }
+              }
+              _ => {}
             }
 
             if cover_response.drag_started() {
@@ -78,7 +109,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         if ui.button("New Shelf").rect.contains(mouse_position)
           && ui.ctx().input().pointer.any_released()
         {
-          // Find the shelf the path is in and remove the path from it
+          // Find the shelf the dragged book's path is in and remove the path from it
           state
             .shelves
             .iter_mut()
@@ -99,7 +130,8 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
           }
 
           // Create shelf with name, add book to it, and push it
-					let shelf = PathGroup::new_with_contents(shelf_name, Vec::from([path.clone()]));
+          let shelf =
+            PathGroup::new_with_contents(shelf_name, Vec::from([path.clone()]));
           state.shelves.push(shelf);
         };
       });
