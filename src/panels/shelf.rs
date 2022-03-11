@@ -53,6 +53,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
               state.chapter_number = 1;
             }
 
+            // Drag & Drop
             match (
               ui.ctx().pointer_hover_pos(),
               state.dragged_book.as_ref(),
@@ -76,7 +77,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                   // Add path to shelf after this book
                   state.shelves[shelf_index]
                     .paths
-                    .insert(path_index, dragged_path.clone());
+                    .insert(path_index + 1, dragged_path.clone());
 
                   state.dragged_book = None;
                 }
@@ -84,13 +85,14 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
               _ => {}
             }
 
+            // Set dragged book when dragged
             if cover_response.drag_started() {
               state.dragged_book =
                 Some((path.to_path_buf(), title, path_group.name.clone()));
             }
 
             // Context menu
-            cover_response.context_menu(|ui| {
+            cover_response.clone().context_menu(|ui| {
               if ui.button("Remove").clicked() {
                 state.shelves[shelf_index].paths.retain(|p| p != path);
                 ui.close_menu();
