@@ -38,6 +38,7 @@ pub struct MyApp {
   book_cover_width: f32,
   /// Path, original shelf name, title
   dragged_book: Option<(PathBuf, String, String)>,
+  shelf_reorganize_mode: bool,
 }
 
 impl Default for MyApp {
@@ -63,6 +64,7 @@ impl Default for MyApp {
       theme: DocumentColors::default(),
       book_cover_width: 140.0,
       dragged_book: None,
+      shelf_reorganize_mode: false,
     }
   }
 }
