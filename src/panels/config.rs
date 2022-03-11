@@ -7,7 +7,7 @@ use crate::{
   ui::{BookTextStyle, DocumentColors},
 };
 
-pub fn config_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
+pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   ui.collapsing("Program", |ui| {
     // Path to directory containing books
     ui.horizontal(|ui| {
@@ -96,7 +96,7 @@ pub fn config_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       ui.separator();
 
       if ui.button("Reset Colors").clicked() {
-        state.theme = DocumentColors::default()
+        state.theme = DocumentColors::default();
       }
     });
 

@@ -8,7 +8,7 @@ use egui::FontFamily;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  panels::{config::config_ui, notes::notes_ui, shelf::shelf_ui},
+  panels::{config, notes, shelf},
   reader::right_panel_reader_ui,
   MyApp,
 };
@@ -110,7 +110,7 @@ impl Default for DocumentColors {
   }
 }
 
-pub fn main_ui(ctx: &Context, state: &mut MyApp) {
+pub fn main(ctx: &Context, state: &mut MyApp) {
   egui::Area::new("Container").movable(false).show(ctx, |ui| {
     let area_width = ui.available_width();
 		let area_height = ui.available_height();
@@ -194,13 +194,13 @@ pub fn main_ui(ctx: &Context, state: &mut MyApp) {
 
 					match state.ui_state.left_panel_state {
 						PanelState::Config => {
-							config_ui(state, ui);
+							config::ui(state, ui);
 						}
 						PanelState::Shelf => {
-							shelf_ui(state, ui);
+							shelf::ui(state, ui);
 						}
 						PanelState::Notes => {
-							notes_ui(state, ui);
+							notes::ui(state, ui);
 						}
 						PanelState::Info => {
 							ui.label("TODO :0");

@@ -2,7 +2,7 @@ use egui::TextEdit;
 
 use crate::ui::Note;
 
-pub fn notes_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
+pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   if let Some(path) = &state.selected_book_path {
     if let Some(book_info) = state.book_userdata.get_mut(path) {
       let notes = &mut book_info.notes;

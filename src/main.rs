@@ -15,7 +15,7 @@ use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
-use ui::{main_ui, BookTextStyle, DocumentColors, Note, PanelState, UIState};
+use ui::{BookTextStyle, DocumentColors, Note, PanelState, UIState};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
@@ -94,6 +94,7 @@ impl epi::App for MyApp {
       // spacing: todo!(),
       // interaction: todo!(),
       visuals: egui::Visuals {
+        dark_mode: true,
         widgets: egui::style::Widgets {
           noninteractive: WidgetVisuals {
             rounding: Rounding::from(1.5),
@@ -121,7 +122,7 @@ impl epi::App for MyApp {
         window_rounding: Rounding::from(5.0),
         // window_shadow: todo!(),
         resize_corner_size: 8.0,
-        ..Default::default()
+        ..egui::Visuals::default()
       },
       // debug: egui::style::DebugOptions {
       //   debug_on_hover: true,
@@ -129,7 +130,7 @@ impl epi::App for MyApp {
       //   show_expand_height: true,
       //   show_resize: true,
       // },
-      ..Default::default()
+      ..egui::Style::default()
     });
 
     // Font setup
@@ -187,7 +188,7 @@ impl epi::App for MyApp {
   }
 
   fn update(&mut self, ctx: &egui::Context, _frame: &epi::Frame) {
-    main_ui(ctx, self);
+    ui::main(ctx, self);
   }
 
   fn save(&mut self, storage: &mut dyn epi::Storage) {
@@ -205,12 +206,10 @@ impl epi::App for MyApp {
 }
 
 fn main() {
-  let app = MyApp {
-    ..Default::default()
-  };
+  let app = MyApp { ..MyApp::default() };
   let native_options = NativeOptions {
     min_window_size: Some(vec2(960.0, 540.0)),
-    ..Default::default()
+    ..eframe::NativeOptions::default()
   };
   run_native(Box::new(app), native_options)
 }

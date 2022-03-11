@@ -3,7 +3,7 @@ use epub::doc::EpubDoc;
 
 use crate::backend::{load_library, PathGroup};
 
-pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
+pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   // Top menu bar
   ui.horizontal(|ui| {
     if state.shelves.is_empty() {
@@ -43,11 +43,12 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         for (path_index, path) in path_group.paths.iter().enumerate() {
           // Ensure the path leads to a valid epub document
           if let Ok(doc) = EpubDoc::new(path) {
-            let title =
-              doc.mdata("title").unwrap_or("<Missing Title>".to_string());
+            let title = doc
+              .mdata("title")
+              .unwrap_or_else(|| "<Missing Title>".to_string());
             let author = doc
               .mdata("creator")
-              .unwrap_or("<Missing Title>".to_string());
+              .unwrap_or_else(|| "<Missing Title>".to_string());
 
             // If searching: only show items beind searched for
             if title
@@ -67,7 +68,9 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                     state
                       .book_covers
                       .get(&title)
-                      .unwrap_or(state.book_covers.get("fallback").unwrap())
+                      .unwrap_or_else(|| {
+                        state.book_covers.get("fallback").unwrap()
+                      })
                       .texture_id(ui.ctx()),
                     vec2(
                       140.0 * state.book_cover_width_multiplier,
@@ -90,55 +93,49 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                 if state.shelf_reorganize_mode {
                   // Set dragged book when dragged
                   if cover_response.drag_started() {
-                    state.dragged_book = Some((
-                      path.to_path_buf(),
-                      title,
-                      path_group.name.clone(),
-                    ));
+                    state.dragged_book =
+                      Some((path.clone(), title, path_group.name.clone()));
                   }
 
                   // Drag & Drop
-                  match (
+                  if let (
+                    Some(mouse_position),
+                    Some((dragged_path, _dragged_title, old_shelf_name)),
+                    true,
+                  ) = (
                     ui.ctx().pointer_hover_pos(),
                     state.dragged_book.as_ref(),
                     ui.ctx().input().pointer.any_released(),
                   ) {
-                    (
-                      Some(mouse_position),
-                      Some((dragged_path, _dragged_title, old_shelf_name)),
-                      true,
-                    ) => {
-                      if cover_response.rect.contains(mouse_position) {
-                        // Find the shelf the dragged book's path is in and remove the path from it
-                        state
-                          .shelves
-                          .iter_mut()
-                          .find(|s| s.name == *old_shelf_name)
-                          .unwrap()
-                          .paths
-                          .retain(|p| p != dragged_path);
+                    if cover_response.rect.contains(mouse_position) {
+                      // Find the shelf the dragged book's path is in and remove the path from it
+                      state
+                        .shelves
+                        .iter_mut()
+                        .find(|s| s.name == *old_shelf_name)
+                        .unwrap()
+                        .paths
+                        .retain(|p| p != dragged_path);
 
-                        // Add path to shelf after this book
-                        state.shelves[shelf_index]
-                          .paths
-                          .insert(path_index + 1, dragged_path.clone());
+                      // Add path to shelf after this book
+                      state.shelves[shelf_index]
+                        .paths
+                        .insert(path_index + 1, dragged_path.clone());
 
-                        state.dragged_book = None;
-                      }
+                      state.dragged_book = None;
                     }
-                    _ => {}
                   }
                 } else {
                   // Select book on click
                   if cover_response.clicked() {
                     state.selected_book = Some(EpubDoc::new(path).unwrap());
-                    state.selected_book_path = Some(path.to_path_buf());
+                    state.selected_book_path = Some(path.clone());
                     state.chapter_number = 1;
                   }
                 }
 
                 // Context menu
-                cover_response.clone().context_menu(|ui| {
+                cover_response.context_menu(|ui| {
                   if ui.button("Remove").clicked() {
                     state.shelves[shelf_index].paths.retain(|p| p != path);
                     ui.close_menu();
@@ -157,7 +154,7 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         .add_enabled(state.shelves.len() > 1, Button::new("Remove"))
         .clicked()
       {
-        for path in state.shelves[shelf_index].paths.clone().iter() {
+        for path in &state.shelves[shelf_index].paths.clone() {
           state.shelves[shelf_index - 1].paths.push(path.clone());
         }
 
@@ -209,27 +206,26 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   }
 
   // Shows the cover of the book currently being dragged, if any
-  match (&state.dragged_book, ui.ctx().pointer_hover_pos()) {
-    (Some((_, title, _)), Some(mouse_position)) => {
-      egui::Area::new("Book Cover Drag Area")
-        .fixed_pos(mouse_position)
-        .order(egui::Order::Foreground)
-        .show(ui.ctx(), |ui| {
-          let image_size = vec2(
-            140.0 * state.book_cover_width_multiplier,
-            140.0 * state.book_cover_width_multiplier * 1.6,
-          );
+  if let (Some((_, title, _)), Some(mouse_position)) =
+    (&state.dragged_book, ui.ctx().pointer_hover_pos())
+  {
+    egui::Area::new("Book Cover Drag Area")
+      .fixed_pos(mouse_position)
+      .order(egui::Order::Foreground)
+      .show(ui.ctx(), |ui| {
+        let image_size = vec2(
+          140.0 * state.book_cover_width_multiplier,
+          140.0 * state.book_cover_width_multiplier * 1.6,
+        );
 
-          ui.image(
-            state
-              .book_covers
-              .get(title)
-              .unwrap_or(state.book_covers.get("fallback").unwrap())
-              .texture_id(ui.ctx()),
-            image_size,
-          );
-        });
-    }
-    _ => {}
+        ui.image(
+          state
+            .book_covers
+            .get(title)
+            .unwrap_or_else(|| state.book_covers.get("fallback").unwrap())
+            .texture_id(ui.ctx()),
+          image_size,
+        );
+      });
   }
 }

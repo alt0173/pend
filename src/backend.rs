@@ -105,11 +105,11 @@ pub fn parse_calibre(
     let processed = rx.replace_all(line, "");
     let processed = processed.trim();
 
-    if !processed.is_empty() {
+    if processed.is_empty() {
+      lines_removed += 1;
+    } else {
       output.push_str(processed);
       output.push('\n');
-    } else {
-      lines_removed += 1;
     }
   }
 

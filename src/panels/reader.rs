@@ -13,7 +13,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
       state.chapter_number = target.chapter as usize;
     }
 
-    // Arrow key navigation
+    // Key-based page navigation
     if ui.ctx().input().key_pressed(egui::Key::ArrowLeft)
       && book.get_current_page() > 1
     {
@@ -25,35 +25,37 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
       state.chapter_number += 1;
     }
 
-    // Button navigation
-    ui.horizontal(|ui| {
-      if !state.ui_state.reader_focus_mode {
+    // Button-based page navigation
+    if state.ui_state.reader_focus_mode {
+      ui.horizontal(|ui| {
+        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+          if ui.button("Exit Focus").clicked() {
+            state.ui_state.reader_focus_mode = false;
+          }
+        });
+      });
+    } else {
+      ui.horizontal(|ui| {
         // Back page (CHAPTER) button
         if ui.button("\u{2190}").clicked() && book.get_current_page() > 1 {
           state.chapter_number -= 1;
         }
+
         // Page (CHAPTER) navigation thing
         ui.add(
           DragValue::new(&mut state.chapter_number)
             .max_decimals(0)
             .clamp_range(1..=book.get_num_pages() - 1),
         );
+
         // Forward page (CHAPTER) button
         if ui.button("\u{2192}").clicked()
           && book.get_current_page() < book.get_num_pages() - 1
         {
           state.chapter_number += 1;
         }
-      } else {
-        ui.horizontal(|ui| {
-          ui.with_layout(egui::Layout::right_to_left(), |ui| {
-            if ui.button("Exit Focus").clicked() {
-              state.ui_state.reader_focus_mode = false;
-            }
-          });
-        });
-      }
-    });
+      });
+    }
 
     // Apply page / chapter change of needed
     if book.get_current_page() != state.chapter_number {
@@ -163,10 +165,10 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                 let coord = (state.chapter_number, line_number);
 
                 if let Some(color) = highlights.get_mut(&coord) {
-                  if *color != state.theme.highlight_color {
-                    *color = state.theme.highlight_color;
-                  } else {
+                  if *color == state.theme.highlight_color {
                     highlights.remove(&coord);
+                  } else {
+                    *color = state.theme.highlight_color;
                   };
                 } else {
                   highlights.insert(coord, state.theme.highlight_color);
