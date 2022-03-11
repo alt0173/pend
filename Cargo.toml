@@ -9,10 +9,10 @@ edition = "2021"
 eframe = "0.17.0" # GUI
 egui = {version = "0.17.0", features = ["serialize"]}
 egui_extras = { version = "0.17.0", features = ["image"]} # Extra stuff for the GUI (Nicer images)
-image = { version = "*", features = ["jpeg"]} # Also for loading images
+image = { version = "0.24.1", features = ["jpeg"]} # Also for loading images
 glob = "0.3.0" # Search for files
 epub = "1.2.3" # Deal with epubs
-regex = "*" # :|
+regex = "1.5.4" # :|
 serde = { version = "1.0.136", features = ["derive"] }
 
 [features]
