@@ -28,6 +28,14 @@ pub fn config_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     }
 
     ui.checkbox(&mut state.ui_state.reader_focus_mode, "Focus Mode");
+
+    ui.horizontal(|ui| {
+      ui.label("Shelf Book Size: ");
+      ui.add(
+        egui::Slider::new(&mut state.book_cover_width_multiplier, 0.5..=2.0)
+          .step_by(0.25),
+      );
+    });
   });
 
   ui.collapsing("Document", |ui| {
@@ -52,20 +60,24 @@ pub fn config_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         );
       });
 
-    ui.add(
-      egui::Slider::new(&mut state.book_style.font_size, 12.0..=120.0)
-        .step_by(0.25)
-        .prefix("Text Size: "),
-    );
+    ui.horizontal(|ui| {
+      ui.label("Text Size: ");
+      ui.add(
+        egui::Slider::new(&mut state.book_style.font_size, 12.0..=120.0)
+          .step_by(0.25),
+      );
+    });
 
-    ui.add(
-      egui::Slider::new(
-        &mut state.book_style.line_spacing_multiplier,
-        0.0..=6.0,
-      )
-      .step_by(0.25)
-      .prefix("Line Spacing: "),
-    );
+    ui.horizontal(|ui| {
+      ui.label("Line Spacing: ");
+      ui.add(
+        egui::Slider::new(
+          &mut state.book_style.line_spacing_multiplier,
+          0.0..=6.0,
+        )
+        .step_by(0.25),
+      );
+    });
 
     ui.collapsing("Colors", |ui| {
       ui.horizontal(|ui| {

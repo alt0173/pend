@@ -38,26 +38,29 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   // Loop over all shelves
   for (shelf_index, path_group) in state.shelves.clone().iter().enumerate() {
     let collapsing_response = ui.collapsing(path_group.name.clone(), |ui| {
-      ui.horizontal_wrapped(|ui| {
+      egui::Grid::new(&path_group.name).show(ui, |ui| {
         // Loop over all paths within a shelf and show the books
         for (path_index, path) in path_group.paths.iter().enumerate() {
-          ui.vertical(|ui| {
-            // Ensure the path leads to a valid epub document
-            if let Ok(doc) = EpubDoc::new(path) {
-              let title =
-                doc.mdata("title").unwrap_or("<Missing Title>".to_string());
-              let author = doc
-                .mdata("creator")
-                .unwrap_or("<Missing Title>".to_string());
+          // Ensure the path leads to a valid epub document
+          if let Ok(doc) = EpubDoc::new(path) {
+            let title =
+              doc.mdata("title").unwrap_or("<Missing Title>".to_string());
+            let author = doc
+              .mdata("creator")
+              .unwrap_or("<Missing Title>".to_string());
 
-              // If searching: only show items beind searched for
-              if title
+            // If searching: only show items beind searched for
+            if title
+              .to_lowercase()
+              .contains(&state.shelf_search.to_lowercase())
+              || author
                 .to_lowercase()
                 .contains(&state.shelf_search.to_lowercase())
-                || author
-                  .to_lowercase()
-                  .contains(&state.shelf_search.to_lowercase())
-              {
+            {
+              ui.vertical_centered(|ui| {
+                // This is very important to ensure everything disaplys sanely
+                ui.set_max_width(140.0 * state.book_cover_width_multiplier);
+
                 // Cover image button thing
                 let cover_response = ui.add(
                   egui::ImageButton::new(
@@ -66,16 +69,22 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                       .get(&title)
                       .unwrap_or(state.book_covers.get("fallback").unwrap())
                       .texture_id(ui.ctx()),
-                    vec2(state.book_cover_width, state.book_cover_width * 1.6),
+                    vec2(
+                      140.0 * state.book_cover_width_multiplier,
+                      140.0 * state.book_cover_width_multiplier * 1.6,
+                    ),
                   )
                   .sense(egui::Sense::click_and_drag()),
                 );
 
+                // Book data / information
                 ui.label(
-                  RichText::new(&title).size(state.book_cover_width / 10.0),
+                  RichText::new(&title)
+                    .size(140.0 * state.book_cover_width_multiplier / 10.0),
                 );
                 ui.label(
-                  RichText::new(&author).size(state.book_cover_width / 10.0),
+                  RichText::new(&author)
+                    .size(140.0 * state.book_cover_width_multiplier / 10.0),
                 );
 
                 if state.shelf_reorganize_mode {
@@ -135,9 +144,9 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                     ui.close_menu();
                   }
                 });
-              }
+              });
             }
-          });
+          }
         }
       });
     });
@@ -206,8 +215,10 @@ pub fn shelf_ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         .fixed_pos(mouse_position)
         .order(egui::Order::Foreground)
         .show(ui.ctx(), |ui| {
-          let image_size =
-            vec2(state.book_cover_width, state.book_cover_width * 1.6);
+          let image_size = vec2(
+            140.0 * state.book_cover_width_multiplier,
+            140.0 * state.book_cover_width_multiplier * 1.6,
+          );
 
           ui.image(
             state

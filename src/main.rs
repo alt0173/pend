@@ -35,7 +35,7 @@ pub struct MyApp {
   book_userdata: HashMap<PathBuf, LocalBookInfo>,
   goto_target: Option<Note>,
   theme: DocumentColors,
-  book_cover_width: f32,
+  book_cover_width_multiplier: f32,
   /// Path, original shelf name, title
   dragged_book: Option<(PathBuf, String, String)>,
   shelf_reorganize_mode: bool,
@@ -62,7 +62,7 @@ impl Default for MyApp {
       book_userdata: HashMap::new(),
       goto_target: None,
       theme: DocumentColors::default(),
-      book_cover_width: 140.0,
+      book_cover_width_multiplier: 1.0,
       dragged_book: None,
       shelf_reorganize_mode: false,
     }
@@ -124,10 +124,10 @@ impl epi::App for MyApp {
         ..Default::default()
       },
       // debug: egui::style::DebugOptions {
-      // 	debug_on_hover: true,
-      // 	show_expand_width: true,
-      // 	show_expand_height: true,
-      // 	show_resize: true,
+      //   debug_on_hover: true,
+      //   show_expand_width: true,
+      //   show_expand_height: true,
+      //   show_resize: true,
       // },
       ..Default::default()
     });
