@@ -92,10 +92,10 @@ pub fn parse_calibre(
       for capture in captures.iter().flatten() {
         if let Some(format) = match capture.as_str() {
           x if x.contains("title") => Some(FormattingInfo::Title),
-          x if x.contains('h') => Some(FormattingInfo::Heading),
-          x if x.contains("h2") => Some(FormattingInfo::Heading2),
-          x if x.contains("i") => Some(FormattingInfo::Italic),
-          x if x.contains("b") => Some(FormattingInfo::Bold),
+          x if x.contains("<h1") => Some(FormattingInfo::Heading),
+          x if x.contains("<h2") => Some(FormattingInfo::Heading2),
+          x if x.contains("<i") => Some(FormattingInfo::Italic),
+          x if x.contains("<b") => Some(FormattingInfo::Bold),
           _ => None,
         } {
           book_info

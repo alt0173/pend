@@ -123,6 +123,10 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     if ui.button("Acknowledgements").clicked() {
       state.ui_state.display_ofl_popup = true;
     }
-    // ui.checkbox(&mut state.ui_state.display_raw_text, "[DEBUG] Display Raw Text");
+    #[cfg(debug_assertions)]
+    ui.checkbox(
+      &mut state.ui_state.display_raw_text,
+      "[DEBUG] Display Raw Text",
+    );
   });
 }

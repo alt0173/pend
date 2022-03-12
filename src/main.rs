@@ -164,7 +164,7 @@ impl epi::App for MyApp {
 
     ctx.set_fonts(fonts);
 
-    // Some fields of the program state do not support (de)serialization, so they must be rebuilt manually
+    // Some fields of the state do not support (de)serialization, so they must be rebuilt manually
     // Loads selected book
     if let Some(path) = &self.selected_book_path {
       if let Ok(doc) = EpubDoc::new(path) {
