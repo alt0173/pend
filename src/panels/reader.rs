@@ -9,6 +9,10 @@ use crate::{
 pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
   // Displays page(s) of the book
   if let Some(book) = &mut state.selected_book {
+    // If a book is loaded there must be a path, only panis if
+    // unexpected unloading occurs
+    let selected_book_path = state.selected_book_path.as_ref().unwrap();
+
     if let Some(target) = &state.goto_target {
       state.chapter_number = target.chapter as usize;
     }
@@ -78,10 +82,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
           let contents = parse_calibre(
             &book.get_current_str().unwrap(),
             book.get_current_page(),
-            state
-              .book_userdata
-              .get_mut(state.selected_book_path.as_ref().unwrap())
-              .unwrap(),
+            state.book_userdata.get_mut(selected_book_path).unwrap(),
           );
           let contents = contents.lines();
 
@@ -108,7 +109,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                   .background_color(
                     if let Some(color) = state
                       .book_userdata
-                      .get(&state.selected_book_path.as_ref().unwrap().clone())
+                      .get(selected_book_path)
                       .unwrap()
                       .highlights
                       .get(&(state.chapter_number, line_number))
@@ -123,7 +124,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                 // Applies special formatting (heading, bold, etc.)
                 if let Some(info) = state
                   .book_userdata
-                  .get_mut(state.selected_book_path.as_ref().unwrap())
+                  .get_mut(selected_book_path)
                   .unwrap()
                   .formatting_info
                   .get(&(state.chapter_number, line_number))
@@ -159,7 +160,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
               if ui.button("Highlight").clicked() {
                 let highlights = &mut state
                   .book_userdata
-                  .get_mut(state.selected_book_path.as_ref().unwrap())
+                  .get_mut(selected_book_path)
                   .unwrap()
                   .highlights;
                 let coord = (state.chapter_number, line_number);
@@ -180,7 +181,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
               if ui.button("Add Note").clicked() {
                 let notes = &mut state
                   .book_userdata
-                  .get_mut(state.selected_book_path.as_ref().unwrap())
+                  .get_mut(selected_book_path)
                   .unwrap()
                   .notes;
                 let note =
