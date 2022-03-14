@@ -38,11 +38,18 @@ impl LocalBookInfo {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RenameState {
+  Active,
+  Inactive,
+  Error,
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialOrd, Eq, Ord)]
 pub struct PathGroup {
   pub name: String,
   pub paths: Vec<PathBuf>,
-  pub renaming: bool,
+  pub renaming: RenameState,
   pub desired_name: String,
 }
 
@@ -57,7 +64,7 @@ impl PathGroup {
     Self {
       name: name.into(),
       paths: Vec::new(),
-      renaming: false,
+      renaming: RenameState::Inactive,
       desired_name: String::new(),
     }
   }
@@ -69,7 +76,7 @@ impl PathGroup {
     Self {
       name: name.into(),
       paths,
-      renaming: false,
+      renaming: RenameState::Inactive,
       desired_name: String::new(),
     }
   }

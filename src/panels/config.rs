@@ -106,7 +106,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       if ui.button("Reset Style").clicked() {
         state.book_style = BookTextStyle::default();
       }
-      if ui.button("Clear Highlights").clicked() {
+      if ui.button("Clear Selected Book Highlights").clicked() {
         if let Some(path) = &state.selected_book_path {
           state
             .book_userdata

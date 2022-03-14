@@ -1,7 +1,7 @@
 use egui::{vec2, Button, RichText, TextEdit};
 use epub::doc::EpubDoc;
 
-use crate::backend::{load_library, PathGroup};
+use crate::backend::{load_library, PathGroup, RenameState};
 
 pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   // Top menu bar
@@ -37,6 +37,34 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
 
   // Loop over all shelves
   for (shelf_index, path_group) in state.shelves.clone().iter().enumerate() {
+    if path_group.renaming != RenameState::Inactive {
+      egui::Window::new("Rename Shelf")
+        .auto_sized()
+        .show(ui.ctx(), |ui| {
+          let shelf = &mut state.shelves[shelf_index];
+
+          // The textedit
+          TextEdit::singleline(&mut shelf.desired_name)
+            .hint_text(&path_group.name)
+            .show(ui);
+
+          if shelf.desired_name.chars().count() > 50 {
+            ui.label("Invalid name");
+          } else {
+            if ui.ctx().input().key_pressed(egui::Key::Enter) {
+              if shelf.desired_name != shelf.name {
+                shelf.name = shelf.desired_name.clone();
+                shelf.renaming = RenameState::Inactive;
+              }
+            }
+          }
+
+          if ui.ctx().input().key_pressed(egui::Key::Escape) {
+            shelf.renaming = RenameState::Inactive;
+          }
+        });
+    }
+
     let collapsing_response = ui.collapsing(path_group.name.clone(), |ui| {
       egui::Grid::new(&path_group.name).show(ui, |ui| {
         // Loop over all paths within a shelf and show the books
@@ -150,6 +178,10 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
 
     // Shelf context menu
     collapsing_response.header_response.context_menu(|ui| {
+      if ui.button("Rename").clicked() {
+        state.shelves[shelf_index].renaming = RenameState::Active;
+      }
+
       if ui
         .add_enabled(state.shelves.len() > 1, Button::new("Remove"))
         .clicked()
