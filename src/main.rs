@@ -10,7 +10,7 @@ use eframe::{
   epaint::{FontFamily, Rounding},
   epi, run_native, NativeOptions,
 };
-use egui::vec2;
+use egui::{vec2, Color32, Stroke};
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
@@ -97,38 +97,63 @@ impl epi::App for MyApp {
         dark_mode: true,
         widgets: egui::style::Widgets {
           noninteractive: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.noninteractive
+            bg_fill: Color32::from_rgb(30, 34, 51),
+            bg_stroke: Stroke::new(2.5, Color32::from_rgb(43, 48, 69)),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(180)),
+            rounding: Rounding::same(1.5),
+            expansion: 0.0,
           },
           inactive: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.inactive
+            bg_fill: Color32::from_rgb(54, 63, 104),
+            bg_stroke: Stroke::new(2.0, Color32::from_rgb(72, 85, 137)),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(200)),
+            rounding: Rounding::same(1.5),
+            expansion: 0.0,
           },
           hovered: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.hovered
+            bg_fill: Color32::from_rgb(72, 85, 137),
+            bg_stroke: Stroke::new(2.0, Color32::from_rgb(82, 95, 147)),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(220)),
+            rounding: Rounding::same(1.5),
+            expansion: 1.0,
           },
           active: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.active
+            bg_fill: Color32::from_rgb(72, 85, 137),
+            bg_stroke: Stroke::new(2.0, Color32::from_rgb(82, 95, 147)),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(220)),
+            rounding: Rounding::same(1.5),
+            expansion: 1.0,
           },
           open: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.open
+            bg_fill: Color32::from_rgb(30, 34, 51),
+            bg_stroke: Stroke::new(2.5, Color32::from_rgb(43, 48, 69)),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(200)),
+            rounding: Rounding::same(1.5),
+            expansion: 0.0,
           },
         },
-        // selection: todo!(),
+        selection: egui::style::Selection {
+          bg_fill: Color32::from_rgb(72, 85, 137),
+          stroke: Stroke::new(1.0, Color32::from_gray(220)),
+        },
         // hyperlink_color: todo!(),
         window_rounding: Rounding::from(5.0),
         // window_shadow: todo!(),
         resize_corner_size: 8.0,
         ..egui::Visuals::default()
       },
+      // For debooging
       // debug: egui::style::DebugOptions {
       //   debug_on_hover: true,
       //   show_expand_width: true,
       //   show_expand_height: true,
       //   show_resize: true,
+      // },
+      // Add custom text styles here
+      // text_styles: {
+      //   let mut styles = egui::Style::default().text_styles;
+
+      //   styles
       // },
       ..egui::Style::default()
     });
@@ -137,16 +162,23 @@ impl epi::App for MyApp {
     let mut fonts = FontDefinitions::default();
 
     fonts.font_data.insert(
-      "work_sans".into(),
+      "work_sans_medium".to_string(),
       egui::FontData::from_static(include_bytes!(
         "../compiletime_resources/WorkSans-Medium.ttf"
       )),
     );
 
     fonts.font_data.insert(
-      "merriweather_regular".into(),
+      "merriweather_regular".to_string(),
       egui::FontData::from_static(include_bytes!(
         "../compiletime_resources/Merriweather-Regular.ttf"
+      )),
+    );
+
+    fonts.font_data.insert(
+      "noto_mono_regular".to_string(),
+      egui::FontData::from_static(include_bytes!(
+        "../compiletime_resources/NotoSansMono-Regular.ttf"
       )),
     );
 
@@ -154,13 +186,19 @@ impl epi::App for MyApp {
       .families
       .entry(eframe::epaint::FontFamily::Proportional)
       .or_default()
-      .insert(0, "work_sans".into());
+      .insert(0, "work_sans_medium".into());
 
     fonts
       .families
       .entry(FontFamily::Name(Arc::from("Merriweather")))
       .or_default()
       .insert(0, "merriweather_regular".into());
+
+    fonts
+      .families
+      .entry(FontFamily::Monospace)
+      .or_default()
+      .insert(0, "noto_mono_regular".into());
 
     ctx.set_fonts(fonts);
 
