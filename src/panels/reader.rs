@@ -1,4 +1,4 @@
-use egui::{Color32, DragValue, FontId, Label, RichText, ScrollArea, Sense};
+use egui::{Color32, FontId, Label, RichText, ScrollArea, Sense};
 
 use crate::{
   backend::{parse_calibre, FormattingInfo},
@@ -29,37 +29,28 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
       state.chapter_number += 1;
     }
 
-    // Button-based page navigation
-    if state.ui_state.reader_focus_mode {
-      ui.horizontal(|ui| {
+    // Skip to avoid trippled length
+    #[rustfmt::skip]
+    ui.horizontal(|ui| {
+      if state.ui_state.reader_focus_mode {
+        // Collapse focus
+        if ui.add(egui::Button::new(RichText::new("Unfocus"))
+				).clicked() {
+          state.ui_state.reader_focus_mode = false;
+        }
+      } else {
+        // Expand focus
+        if ui.add(egui::Button::new(RichText::new("Focus"))
+				).clicked() {
+          state.ui_state.reader_focus_mode = true;
+        }
+
+        // Display chapter number
         ui.with_layout(egui::Layout::right_to_left(), |ui| {
-          if ui.button("Exit Focus").clicked() {
-            state.ui_state.reader_focus_mode = false;
-          }
+          ui.label(format!("Chapter: {}", &state.chapter_number));
         });
-      });
-    } else {
-      ui.horizontal(|ui| {
-        // Back page (CHAPTER) button
-        if ui.button("\u{2190}").clicked() && book.get_current_page() > 1 {
-          state.chapter_number -= 1;
-        }
-
-        // Page (CHAPTER) navigation thing
-        ui.add(
-          DragValue::new(&mut state.chapter_number)
-            .max_decimals(0)
-            .clamp_range(1..=book.get_num_pages() - 1),
-        );
-
-        // Forward page (CHAPTER) button
-        if ui.button("\u{2192}").clicked()
-          && book.get_current_page() < book.get_num_pages() - 1
-        {
-          state.chapter_number += 1;
-        }
-      });
-    }
+      }
+    });
 
     // Apply page / chapter change of needed
     if book.get_current_page() != state.chapter_number {

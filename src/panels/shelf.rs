@@ -21,11 +21,16 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
 
       ui.with_layout(egui::Layout::right_to_left(), |ui| {
         if ui
-          .button(if state.shelf_reorganize_mode {
-            "\u{1F513}"
-          } else {
-            "\u{1F512}"
-          })
+          .button(
+            RichText::new(if state.shelf_reorganize_mode {
+              // Open lock
+              "\u{1F513}"
+            } else {
+              // Closed lock
+              "\u{1F512}"
+            })
+            .monospace(),
+          )
           .clicked()
         {
           state.shelf_reorganize_mode ^= true;
