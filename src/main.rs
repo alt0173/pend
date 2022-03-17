@@ -17,6 +17,12 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 use ui::{BookTextStyle, DocumentColors, Note, PanelState, UIState};
 
+const DARK_BLUISH: Color32 = Color32::from_rgb(30, 34, 51);
+const DARKISH_BLUISH: Color32 = Color32::from_rgb(43, 48, 69);
+const BLUISH: Color32 = Color32::from_rgb(54, 63, 104);
+const LIGHTISH_BLUISH: Color32 = Color32::from_rgb(72, 85, 137);
+const LIGHT_BLUISH: Color32 = Color32::from_rgb(82, 95, 147);
+
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
   ui_state: UIState,
@@ -97,36 +103,36 @@ impl epi::App for MyApp {
         dark_mode: true,
         widgets: egui::style::Widgets {
           noninteractive: WidgetVisuals {
-            bg_fill: Color32::from_rgb(30, 34, 51),
-            bg_stroke: Stroke::new(2.5, Color32::from_rgb(43, 48, 69)),
+            bg_fill: DARK_BLUISH,
+            bg_stroke: Stroke::new(1.0, DARKISH_BLUISH),
             fg_stroke: Stroke::new(1.0, Color32::from_gray(180)),
             rounding: Rounding::same(1.5),
             expansion: 0.0,
           },
           inactive: WidgetVisuals {
-            bg_fill: Color32::from_rgb(54, 63, 104),
-            bg_stroke: Stroke::new(2.0, Color32::from_rgb(72, 85, 137)),
+            bg_fill: BLUISH,
+            bg_stroke: Stroke::new(2.0, LIGHTISH_BLUISH),
             fg_stroke: Stroke::new(1.0, Color32::from_gray(200)),
             rounding: Rounding::same(1.5),
             expansion: 0.0,
           },
           hovered: WidgetVisuals {
-            bg_fill: Color32::from_rgb(72, 85, 137),
-            bg_stroke: Stroke::new(2.0, Color32::from_rgb(82, 95, 147)),
+            bg_fill: LIGHTISH_BLUISH,
+            bg_stroke: Stroke::new(2.0, LIGHT_BLUISH),
             fg_stroke: Stroke::new(1.0, Color32::from_gray(220)),
             rounding: Rounding::same(1.5),
             expansion: 1.0,
           },
           active: WidgetVisuals {
-            bg_fill: Color32::from_rgb(72, 85, 137),
-            bg_stroke: Stroke::new(2.0, Color32::from_rgb(82, 95, 147)),
+            bg_fill: LIGHTISH_BLUISH,
+            bg_stroke: Stroke::new(2.0, LIGHT_BLUISH),
             fg_stroke: Stroke::new(1.0, Color32::from_gray(220)),
             rounding: Rounding::same(1.5),
             expansion: 1.0,
           },
           open: WidgetVisuals {
-            bg_fill: Color32::from_rgb(30, 34, 51),
-            bg_stroke: Stroke::new(2.5, Color32::from_rgb(43, 48, 69)),
+            bg_fill: DARK_BLUISH,
+            bg_stroke: Stroke::new(2.5, DARKISH_BLUISH),
             fg_stroke: Stroke::new(1.0, Color32::from_gray(200)),
             rounding: Rounding::same(1.5),
             expansion: 0.0,
