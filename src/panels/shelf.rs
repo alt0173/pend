@@ -55,13 +55,11 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
 
           if shelf.desired_name.chars().count() > 50 {
             ui.label("Invalid name");
-          } else {
-            if ui.ctx().input().key_pressed(egui::Key::Enter) {
-              if shelf.desired_name != shelf.name {
-                shelf.name = shelf.desired_name.clone();
-                shelf.renaming = RenameState::Inactive;
-              }
-            }
+          } else if ui.ctx().input().key_pressed(egui::Key::Enter)
+            && shelf.desired_name != shelf.name
+          {
+            shelf.name = shelf.desired_name.clone();
+            shelf.renaming = RenameState::Inactive;
           }
 
           if ui.ctx().input().key_pressed(egui::Key::Escape) {
@@ -70,6 +68,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         });
     }
 
+    // The collapsing header / section
     let collapsing_response = ui.collapsing(path_group.name.clone(), |ui| {
       egui::Grid::new(&path_group.name).show(ui, |ui| {
         // Loop over all paths within a shelf and show the books

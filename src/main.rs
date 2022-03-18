@@ -15,13 +15,10 @@ use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
-use ui::{BookTextStyle, DocumentColors, Note, PanelState, UIState};
-
-const DARK_BLUISH: Color32 = Color32::from_rgb(30, 34, 51);
-const DARKISH_BLUISH: Color32 = Color32::from_rgb(43, 48, 69);
-const BLUISH: Color32 = Color32::from_rgb(54, 63, 104);
-const LIGHTISH_BLUISH: Color32 = Color32::from_rgb(72, 85, 137);
-const LIGHT_BLUISH: Color32 = Color32::from_rgb(82, 95, 147);
+use ui::{
+  BookTextStyle, DocumentColors, Note, PanelState, UIState, BLUISH,
+  DARKISH_BLUISH, DARK_BLUISH, LIGHTISH_BLUISH, LIGHT_BLUISH,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {

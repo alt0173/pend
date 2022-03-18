@@ -8,10 +8,17 @@ use egui::FontFamily;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  panels::{config, notes, shelf},
+  panels::{config, info, notes, shelf},
   reader::right_panel_reader_ui,
   MyApp,
 };
+
+// Assorted colors for the (default) program theme
+pub const DARK_BLUISH: Color32 = Color32::from_rgb(30, 34, 51);
+pub const DARKISH_BLUISH: Color32 = Color32::from_rgb(43, 48, 69);
+pub const BLUISH: Color32 = Color32::from_rgb(54, 63, 104);
+pub const LIGHTISH_BLUISH: Color32 = Color32::from_rgb(72, 85, 137);
+pub const LIGHT_BLUISH: Color32 = Color32::from_rgb(82, 95, 147);
 
 #[derive(Serialize, Deserialize)]
 pub struct UIState {
@@ -141,6 +148,10 @@ pub fn main(ctx: &Context, state: &mut MyApp) {
 					ui.label("Merriweather is a font licensed under version 1.1 of the OFL");
 					ui.hyperlink("https://github.com/SorkinType/Merriweather");
 				});
+				ui.collapsing("Noto Sans Mono", |ui| {
+					ui.label("Noto Sans is a font licensed under version 1.1 of the OFL");
+					ui.hyperlink("https://fonts.google.com/noto")
+				});
 
 				ui.separator();
 
@@ -203,7 +214,7 @@ pub fn main(ctx: &Context, state: &mut MyApp) {
 							notes::ui(state, ui);
 						}
 						PanelState::Info => {
-							ui.label("TODO :0");
+							info::ui(state, ui);
 						}
 						_ => {
 							panic!("Error: Invalid Panel Selected");
