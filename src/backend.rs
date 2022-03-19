@@ -16,6 +16,7 @@ pub enum FormattingInfo {
   Heading2,
   Bold,
   Italic,
+  Break,
 }
 
 // Contains custom content a user creates for each book (notes, highlighted lines, etc.)
@@ -93,27 +94,38 @@ pub fn parse_calibre(
   for (line_number, line) in input.lines().enumerate() {
     let rx = Regex::new(r"<(.*?)>").unwrap();
 
+    let processed = rx.replace_all(line, "");
+    let processed = processed.trim();
+
     // Processes the parsed HTML, (Using my custom, bad, parsing, which is very
     // imperfect to say the least) and converts it into formatting info
-    for captures in rx.captures_iter(line) {
-      for capture in captures.iter().flatten() {
-        if let Some(format) = match capture.as_str() {
-          x if x.contains("title") => Some(FormattingInfo::Title),
-          x if x.contains("<h1") => Some(FormattingInfo::Heading),
-          x if x.contains("<h2") => Some(FormattingInfo::Heading2),
-          x if x.contains("<i") => Some(FormattingInfo::Italic),
-          x if x.contains("<b") => Some(FormattingInfo::Bold),
-          _ => None,
-        } {
-          book_info
-            .formatting_info
-            .insert((chapter, line_number - lines_removed), format);
+    if !processed.is_empty() {
+      for captures in rx.captures_iter(line) {
+        for capture in captures.iter().flatten() {
+          if let Some(capture) = match capture.as_str() {
+            // Not currently implimented, but explicitly nothing
+            // This avoids `<img` being read as `<i` for example
+            x if x.contains("<img") => None,
+            x if x.contains("<body") => None,
+            x if x.contains("<p>") => None,
+            // Working formatting
+            x if x.contains("<title") => Some(FormattingInfo::Title),
+            x if x.contains("<h1") => Some(FormattingInfo::Heading),
+            x if x.contains("<h2") => Some(FormattingInfo::Heading2),
+            x if x.contains("<i") => Some(FormattingInfo::Italic),
+            x if x.contains("<br") => Some(FormattingInfo::Break),
+            x if x.contains("<b") => Some(FormattingInfo::Bold),
+            _ => None,
+          } {
+            // println!("{:?}, {}", capture, &line_number - &lines_removed);
+            // println!("{}", &line);
+            book_info
+              .formatting_info
+              .insert((chapter, line_number - lines_removed), capture);
+          }
         }
       }
     }
-
-    let processed = rx.replace_all(line, "");
-    let processed = processed.trim();
 
     if processed.is_empty() {
       lines_removed += 1;

@@ -238,7 +238,7 @@ impl epi::App for MyApp {
 
   // Name of the process
   fn name(&self) -> &str {
-    "Swag book reading software beta 0.1"
+    "[PLACEHOLDER]"
   }
   // Prevents single instance of un-layedout text
   fn warm_up_enabled(&self) -> bool {

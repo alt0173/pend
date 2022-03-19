@@ -139,7 +139,9 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                     state.dragged_book.as_ref(),
                     ui.ctx().input().pointer.any_released(),
                   ) {
-                    if cover_response.rect.contains(mouse_position) {
+                    if cover_response.rect.contains(mouse_position)
+                      && path != dragged_path
+                    {
                       // Find the shelf the dragged book's path is in and remove the path from it
                       state
                         .shelves
@@ -150,9 +152,15 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                         .retain(|p| p != dragged_path);
 
                       // Add path to shelf after this book
-                      state.shelves[shelf_index]
-                        .paths
-                        .insert(path_index + 1, dragged_path.clone());
+                      if path_index >= state.shelves[shelf_index].paths.len() {
+                        state.shelves[shelf_index]
+                          .paths
+                          .push(dragged_path.clone());
+                      } else {
+                        state.shelves[shelf_index]
+                          .paths
+                          .insert(path_index, dragged_path.clone());
+                      }
 
                       state.dragged_book = None;
                     }
@@ -167,12 +175,14 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                 }
 
                 // Context menu
-                cover_response.context_menu(|ui| {
-                  if ui.button("Remove").clicked() {
-                    state.shelves[shelf_index].paths.retain(|p| p != path);
-                    ui.close_menu();
-                  }
-                });
+                if path_group.renaming == RenameState::Inactive {
+                  cover_response.context_menu(|ui| {
+                    if ui.button("Remove").clicked() {
+                      state.shelves[shelf_index].paths.retain(|p| p != path);
+                      ui.close_menu();
+                    }
+                  });
+                }
               });
             }
           }
@@ -181,22 +191,25 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     });
 
     // Shelf context menu
-    collapsing_response.header_response.context_menu(|ui| {
-      if ui.button("Rename").clicked() {
-        state.shelves[shelf_index].renaming = RenameState::Active;
-      }
-
-      if ui
-        .add_enabled(state.shelves.len() > 1, Button::new("Remove"))
-        .clicked()
-      {
-        for path in &state.shelves[shelf_index].paths.clone() {
-          state.shelves[shelf_index - 1].paths.push(path.clone());
+    if path_group.renaming == RenameState::Inactive {
+      collapsing_response.header_response.context_menu(|ui| {
+        if ui.button("Rename").clicked() {
+          state.shelves[shelf_index].renaming = RenameState::Active;
+          ui.close_menu();
         }
 
-        state.shelves.remove(shelf_index);
-      };
-    });
+        if ui
+          .add_enabled(state.shelves.len() > 1, Button::new("Remove"))
+          .clicked()
+        {
+          for path in &state.shelves[shelf_index].paths.clone() {
+            state.shelves[shelf_index - 1].paths.push(path.clone());
+          }
+
+          state.shelves.remove(shelf_index);
+        };
+      });
+    }
   }
 
   // Shelf addition

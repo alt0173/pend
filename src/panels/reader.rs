@@ -133,6 +133,9 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                       FormattingInfo::Heading2 => {
                         text = text.size(font_id.size * 1.25);
                       }
+                      FormattingInfo::Break => {
+                        // TODO: Add some sort of newline / break here
+                      }
                       FormattingInfo::Bold => text = text.strong(),
                       FormattingInfo::Italic => text = text.italics(),
                     }
