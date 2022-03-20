@@ -203,7 +203,11 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
           .clicked()
         {
           for path in &state.shelves[shelf_index].paths.clone() {
-            state.shelves[shelf_index - 1].paths.push(path.clone());
+            if shelf_index == 0 {
+              state.shelves[1].paths.push(path.clone());
+            } else {
+              state.shelves[shelf_index - 1].paths.push(path.clone());
+            }
           }
 
           state.shelves.remove(shelf_index);
