@@ -41,7 +41,7 @@ pub struct MyApp {
   book_cover_width_multiplier: f32,
   /// Path, original shelf name, title
   dragged_book: Option<(PathBuf, String, String)>,
-  shelf_reorganize_mode: bool,
+  reorganizing_shelf: bool,
 }
 
 impl Default for MyApp {
@@ -67,7 +67,7 @@ impl Default for MyApp {
       theme: DocumentColors::default(),
       book_cover_width_multiplier: 1.0,
       dragged_book: None,
-      shelf_reorganize_mode: false,
+      reorganizing_shelf: false,
     }
   }
 }
@@ -101,7 +101,7 @@ impl epi::App for MyApp {
         widgets: egui::style::Widgets {
           noninteractive: WidgetVisuals {
             bg_fill: DARK_BLUISH,
-            bg_stroke: Stroke::new(1.0, DARKISH_BLUISH),
+            bg_stroke: Stroke::new(2.5, DARKISH_BLUISH),
             fg_stroke: Stroke::new(1.0, Color32::from_gray(180)),
             rounding: Rounding::same(1.5),
             expansion: 0.0,

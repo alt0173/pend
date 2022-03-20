@@ -22,7 +22,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       ui.with_layout(egui::Layout::right_to_left(), |ui| {
         if ui
           .button(
-            RichText::new(if state.shelf_reorganize_mode {
+            RichText::new(if state.reorganizing_shelf {
               // Open lock
               "\u{1F513}"
             } else {
@@ -33,7 +33,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
           )
           .clicked()
         {
-          state.shelf_reorganize_mode ^= true;
+          state.reorganizing_shelf ^= true;
         }
       });
     }
@@ -122,7 +122,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                     .size(140.0 * state.book_cover_width_multiplier / 10.0),
                 );
 
-                if state.shelf_reorganize_mode {
+                if state.reorganizing_shelf {
                   // Set dragged book when dragged
                   if cover_response.drag_started() {
                     state.dragged_book =
@@ -175,7 +175,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                 }
 
                 // Context menu
-                if path_group.renaming == RenameState::Inactive {
+                if !state.reorganizing_shelf {
                   cover_response.context_menu(|ui| {
                     if ui.button("Remove").clicked() {
                       state.shelves[shelf_index].paths.retain(|p| p != path);
