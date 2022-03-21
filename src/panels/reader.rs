@@ -94,7 +94,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
             let mut goto_target_response = None;
 
             for (line_number, line) in contents.into_iter().enumerate() {
-              let response = ui.add(
+              let line_response = ui.add(
                 Label::new({
                   // Creates text with normal / default appearence
                   // This is how normal body text looks
@@ -148,12 +148,12 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
 
               if let Some(target) = &state.goto_target {
                 if line_number == target.line as usize {
-                  goto_target_response = Some(response.clone());
+                  goto_target_response = Some(line_response.clone());
                 }
               }
 
               // Context menu
-              response.context_menu(|ui| {
+              line_response.context_menu(|ui| {
                 if ui.button("Highlight").clicked() {
                   let highlights = &mut state
                     .book_userdata
@@ -172,6 +172,11 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                     highlights.insert(coord, state.theme.highlight_color);
                   }
 
+                  ui.close_menu();
+                }
+
+                if ui.button("Copy").clicked() {
+                  ui.output().copied_text = line.to_string();
                   ui.close_menu();
                 }
 
