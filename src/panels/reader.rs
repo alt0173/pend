@@ -154,26 +154,52 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
 
               // Context menu
               line_response.context_menu(|ui| {
-                if ui.button("Highlight").clicked() {
-                  let highlights = &mut state
-                    .book_userdata
-                    .get_mut(selected_book_path)
-                    .unwrap()
-                    .highlights;
-                  let coord = (state.chapter_number, line_number);
+                ui.horizontal(|ui| {
+                  for (index, color) in [
+                    state.theme.highlight_color,
+                    Color32::from_rgb(255, 150, 138),
+                    Color32::from_rgb(255, 209, 138),
+                    Color32::from_rgb(138, 255, 150),
+                    Color32::from_rgb(150, 138, 255),
+                  ]
+                  .iter()
+                  .enumerate()
+                  {
+                    // Seperator placed after the first option to indicate
+                    // the user's custom selected highlight color
+                    if index == 1 {
+                      ui.separator();
+                      ui.add_space(6.0);
+                    }
 
-                  if let Some(color) = highlights.get_mut(&coord) {
-                    if *color == state.theme.highlight_color {
-                      highlights.remove(&coord);
-                    } else {
-                      *color = state.theme.highlight_color;
-                    };
-                  } else {
-                    highlights.insert(coord, state.theme.highlight_color);
+                    // Button & logic
+                    if ui
+                      .button(
+                        RichText::new("\u{25CF}").color(*color).size(32.0),
+                      )
+                      .clicked()
+                    {
+                      let highlights = &mut state
+                        .book_userdata
+                        .get_mut(selected_book_path)
+                        .unwrap()
+                        .highlights;
+                      let coord = (state.chapter_number, line_number);
+
+                      if let Some(existing_color) = highlights.get_mut(&coord) {
+                        if *existing_color == *color {
+                          highlights.remove(&coord);
+                        } else {
+                          *existing_color = *color;
+                        };
+                      } else {
+                        highlights.insert(coord, *color);
+                      }
+
+                      ui.close_menu();
+                    }
                   }
-
-                  ui.close_menu();
-                }
+                });
 
                 if ui.button("Copy").clicked() {
                   ui.output().copied_text = line.to_string();
