@@ -206,20 +206,25 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
           ui.close_menu();
         }
 
-        if ui
-          .add_enabled(state.shelves.len() > 1, Button::new("Remove"))
-          .clicked()
-        {
-          for path in &state.shelves[shelf_index].paths.clone() {
-            if shelf_index == 0 {
-              state.shelves[1].paths.push(path.clone());
-            } else {
-              state.shelves[shelf_index - 1].paths.push(path.clone());
+        // Only allows the shelf to be deleted if there is >1 other shelves
+        ui.set_enabled(state.shelves.len() > 1);
+        ui.menu_button("Remove Shelf", |ui| {
+          if ui.button("Confirm").clicked() {
+            for path in &state.shelves[shelf_index].paths.clone() {
+              if shelf_index == 0 {
+                state.shelves[1].paths.push(path.clone());
+              } else {
+                state.shelves[shelf_index - 1].paths.push(path.clone());
+              }
             }
-          }
 
-          state.shelves.remove(shelf_index);
-        };
+            state.shelves.remove(shelf_index);
+          };
+
+          if ui.button("Cancel").clicked() {
+            ui.close_menu();
+          };
+        });
       });
     }
   }
