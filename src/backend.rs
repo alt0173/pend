@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ui::Note, MyApp};
 
+/// Denotes type of formatting to be applied to a line group
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum FormattingInfo {
   Title,
@@ -19,7 +20,7 @@ pub enum FormattingInfo {
   Break,
 }
 
-// Contains custom content a user creates for each book (notes, highlighted lines, etc.)
+/// Contains custom content a user creates for each book (notes, highlighted lines, etc.)
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LocalBookInfo {
   pub notes: Vec<Note>,
@@ -46,6 +47,9 @@ pub enum RenameState {
   Error,
 }
 
+/// Group of paths, with some metadata.
+///
+/// Note that when using PartialEq, only the `name` field is compared
 #[derive(Serialize, Deserialize, Clone, PartialOrd, Eq, Ord)]
 pub struct PathGroup {
   pub name: String,

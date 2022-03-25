@@ -1,4 +1,4 @@
-use egui::{vec2, Button, RichText, TextEdit};
+use egui::{vec2, Align2, Button, RichText, TextEdit};
 use epub::doc::EpubDoc;
 
 use crate::backend::{load_library, PathGroup, RenameState};
@@ -45,7 +45,13 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     if path_group.renaming != RenameState::Inactive {
       egui::Window::new("Rename Shelf")
         .auto_sized()
+        .anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0))
         .show(ui.ctx(), |ui| {
+          let shelf_names: Vec<String> = state
+            .shelves
+            .iter()
+            .map(|shelf| shelf.name.to_lowercase())
+            .collect();
           let shelf = &mut state.shelves[shelf_index];
 
           // The textedit
@@ -53,7 +59,9 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
             .hint_text(&path_group.name)
             .show(ui);
 
-          if shelf.desired_name.chars().count() > 50 {
+          if shelf.desired_name.chars().count() > 32
+            || shelf_names.contains(&shelf.desired_name.to_lowercase())
+          {
             ui.label("Invalid name");
           } else if ui.ctx().input().key_pressed(egui::Key::Enter)
             && shelf.desired_name != shelf.name
