@@ -8,7 +8,7 @@ use egui::FontFamily;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  panels::{config, info, notes, shelf},
+  panels::{config, notes, shelf},
   reader::right_panel_reader_ui,
   MyApp,
 };
@@ -34,7 +34,6 @@ pub enum PanelState {
   Reader,
   Config,
   Shelf,
-  Info,
   Notes,
 }
 
@@ -187,11 +186,6 @@ pub fn main(ctx: &Context, state: &mut MyApp) {
 							PanelState::Notes,
 							"Notes",
 						);
-						ui.selectable_value(
-							&mut state.ui_state.left_panel_state,
-							PanelState::Info,
-							"Info",
-						);
 
 						ui.with_layout(egui::Layout::right_to_left(), |ui| {
 							ui.selectable_value(
@@ -212,9 +206,6 @@ pub fn main(ctx: &Context, state: &mut MyApp) {
 						}
 						PanelState::Notes => {
 							notes::ui(state, ui);
-						}
-						PanelState::Info => {
-							info::ui(state, ui);
 						}
 						_ => {
 							panic!("Error: Invalid Panel Selected");
