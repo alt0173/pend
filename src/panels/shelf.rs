@@ -47,11 +47,8 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
         .auto_sized()
         .anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0))
         .show(ui.ctx(), |ui| {
-          let shelf_names: Vec<String> = state
-            .shelves
-            .iter()
-            .map(|shelf| shelf.name.to_lowercase())
-            .collect();
+          let shelf_names = state.shelves.clone();
+          let mut shelf_names = shelf_names.iter();
           let shelf = &mut state.shelves[shelf_index];
 
           // The textedit
@@ -64,7 +61,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
               shelf.renaming = RenameState::Inactive;
             }
           } else if shelf.desired_name.chars().count() > 32
-            || shelf_names.contains(&shelf.desired_name.to_lowercase())
+            || shelf_names.any(|x| x.name == shelf.desired_name.to_lowercase())
           {
             ui.label("Invalid name");
           } else if ui.ctx().input().key_pressed(egui::Key::Enter) {
