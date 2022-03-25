@@ -49,7 +49,7 @@ pub enum RenameState {
 
 /// Group of paths, with some metadata.
 ///
-/// Note that when using PartialEq, only the `name` field is compared
+/// Note that when using `PartialEq`, only the `name` field is compared
 #[derive(Serialize, Deserialize, Clone, PartialOrd, Eq, Ord)]
 pub struct PathGroup {
   pub name: String,
