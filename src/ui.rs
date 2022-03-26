@@ -181,12 +181,15 @@ pub fn main(ctx: &Context, state: &mut MyApp) {
 							PanelState::Shelf,
 							"Shelf",
 						);
+
+						ui.set_enabled(state.selected_book.is_some());
 						ui.selectable_value(
 							&mut state.ui_state.left_panel_state,
 							PanelState::Notes,
 							"Notes",
 						);
 
+						ui.set_enabled(true);
 						ui.with_layout(egui::Layout::right_to_left(), |ui| {
 							ui.selectable_value(
 								&mut state.ui_state.left_panel_state,
