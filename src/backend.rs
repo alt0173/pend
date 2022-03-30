@@ -21,9 +21,11 @@ pub enum FormattingInfo {
 }
 
 /// Contains custom content a user creates for each book (notes, highlighted lines, etc.)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LocalBookInfo {
   pub notes: Vec<Note>,
+  /// Last page the user viewed
+  pub chapter: usize,
   /// (Chapter, Line), Color of the highlight
   pub highlights: HashMap<(usize, usize), Color32>,
   /// (Chapter, Line), info
@@ -34,6 +36,7 @@ impl LocalBookInfo {
   pub fn new() -> Self {
     Self {
       notes: Vec::new(),
+      chapter: 1,
       highlights: HashMap::new(),
       formatting_info: HashMap::new(),
     }

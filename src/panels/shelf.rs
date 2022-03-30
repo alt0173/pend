@@ -42,6 +42,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
 
   // Loop over all shelves
   for (shelf_index, path_group) in state.shelves.clone().iter().enumerate() {
+    // Renaming window
     if path_group.renaming != RenameState::Inactive {
       egui::Window::new("Rename Shelf")
         .auto_sized()
@@ -89,7 +90,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
               .mdata("creator")
               .unwrap_or_else(|| "<Missing Title>".to_string());
 
-            // If searching: only show items beind searched for
+            // Only show items being searched for
             if title
               .to_lowercase()
               .contains(&state.shelf_search.to_lowercase())
@@ -101,7 +102,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                 // This is very important to ensure everything disaplys sanely
                 ui.set_max_width(140.0 * state.book_cover_width_multiplier);
 
-                // Cover image button thing
+                // The button / image of the book's cover
                 let cover_response = ui.add(
                   egui::ImageButton::new(
                     state
@@ -177,7 +178,6 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                   if cover_response.clicked() {
                     state.selected_book = Some(EpubDoc::new(path).unwrap());
                     state.selected_book_path = Some(path.clone());
-                    state.chapter_number = 1;
                   }
                 }
 

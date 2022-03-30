@@ -33,7 +33,6 @@ pub struct MyApp {
   #[serde(skip_deserializing)]
   selected_book: Option<EpubDoc<File>>,
   selected_book_path: Option<PathBuf>,
-  chapter_number: usize,
   book_style: BookTextStyle,
   book_userdata: HashMap<PathBuf, LocalBookInfo>,
   goto_target: Option<Note>,
@@ -60,7 +59,6 @@ impl Default for MyApp {
       book_covers: HashMap::new(),
       selected_book: None,
       selected_book_path: None,
-      chapter_number: 0,
       book_style: BookTextStyle::default(),
       book_userdata: HashMap::new(),
       goto_target: None,

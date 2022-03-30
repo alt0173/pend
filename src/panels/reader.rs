@@ -9,24 +9,27 @@ use crate::{
 pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
   // Displays page(s) of the book
   if let Some(book) = &mut state.selected_book {
-    // If a book is loaded there must be a path, only panis if
+    // If a book is loaded there must be a path, only panics if
     // unexpected unloading occurs
     let selected_book_path = state.selected_book_path.as_ref().unwrap();
 
+    let book_userdata =
+      state.book_userdata.get_mut(selected_book_path).unwrap();
+
     if let Some(target) = &state.goto_target {
-      state.chapter_number = target.chapter as usize;
+      book_userdata.chapter = target.chapter as usize;
     }
 
     // Key-based page navigation
     if ui.ctx().input().key_pressed(egui::Key::ArrowLeft)
       && book.get_current_page() > 1
     {
-      state.chapter_number -= 1;
+      book_userdata.chapter -= 1;
     }
     if ui.ctx().input().key_pressed(egui::Key::ArrowRight)
       && book.get_current_page() < book.get_num_pages() - 1
     {
-      state.chapter_number += 1;
+      book_userdata.chapter += 1;
     }
 
     // Skip to avoid trippled length
@@ -47,15 +50,15 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
 
         // Display chapter number
         ui.with_layout(egui::Layout::right_to_left(), |ui| {
-          ui.label(format!("Chapter: {}", &state.chapter_number));
+          ui.label(format!("Chapter: {}", &book_userdata.chapter));
         });
       }
     });
 
     // Apply page / chapter change of needed
-    if book.get_current_page() != state.chapter_number {
-      book.set_current_page(state.chapter_number).unwrap();
-      state.goto_target = Some(Note::new(state.chapter_number as u16, 0));
+    if book.get_current_page() != book_userdata.chapter {
+      book.set_current_page(book_userdata.chapter).unwrap();
+      state.goto_target = Some(Note::new(book_userdata.chapter as u16, 0));
     }
 
     ui.separator();
@@ -72,11 +75,8 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
           let theme = &state.theme;
 
           if let Ok(page_data) = book.get_current_str() {
-            let contents = parse_calibre(
-              &page_data,
-              book.get_current_page(),
-              state.book_userdata.get_mut(selected_book_path).unwrap(),
-            );
+            let contents =
+              parse_calibre(&page_data, book.get_current_page(), book_userdata);
             let contents = contents.lines();
 
             // Background
@@ -101,12 +101,9 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                   let mut text = RichText::new(line)
                     .color(theme.text_color)
                     .background_color(
-                      if let Some(color) = state
-                        .book_userdata
-                        .get(selected_book_path)
-                        .unwrap()
+                      if let Some(color) = book_userdata
                         .highlights
-                        .get(&(state.chapter_number, line_number))
+                        .get(&(book_userdata.chapter, line_number))
                       {
                         *color
                       } else {
@@ -116,12 +113,9 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                     .font(font_id.clone());
 
                   // Applies special formatting (heading, bold, etc.)
-                  if let Some(info) = state
-                    .book_userdata
-                    .get_mut(selected_book_path)
-                    .unwrap()
+                  if let Some(info) = book_userdata
                     .formatting_info
-                    .get(&(state.chapter_number, line_number))
+                    .get(&(book_userdata.chapter, line_number))
                   {
                     match info {
                       FormattingInfo::Title => {
@@ -179,21 +173,18 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                       )
                       .clicked()
                     {
-                      let highlights = &mut state
-                        .book_userdata
-                        .get_mut(selected_book_path)
-                        .unwrap()
-                        .highlights;
-                      let coord = (state.chapter_number, line_number);
+                      let coord = (book_userdata.chapter.clone(), line_number);
 
-                      if let Some(existing_color) = highlights.get_mut(&coord) {
+                      if let Some(existing_color) =
+                        book_userdata.highlights.get_mut(&coord)
+                      {
                         if *existing_color == *color {
-                          highlights.remove(&coord);
+                          book_userdata.highlights.remove(&coord);
                         } else {
                           *existing_color = *color;
                         };
                       } else {
-                        highlights.insert(coord, *color);
+                        book_userdata.highlights.insert(coord, *color);
                       }
 
                       ui.close_menu();
@@ -207,19 +198,14 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                 }
 
                 if ui.button("Add Note").clicked() {
-                  let notes = &mut state
-                    .book_userdata
-                    .get_mut(selected_book_path)
-                    .unwrap()
-                    .notes;
                   let note = Note::new(
                     book.get_current_page() as u16,
                     line_number as u16,
                   );
 
                   // Adds the note if one is not already in place for the specified chapter / line combo
-                  if !notes.contains(&note) {
-                    notes.push(note);
+                  if book_userdata.notes.contains(&note) {
+                    book_userdata.notes.push(note);
                     state.ui_state.left_panel_state = PanelState::Notes;
 
                     ui.close_menu();
