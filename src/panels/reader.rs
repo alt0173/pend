@@ -204,7 +204,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                   );
 
                   // Adds the note if one is not already in place for the specified chapter / line combo
-                  if book_userdata.notes.contains(&note) {
+                  if !book_userdata.notes.contains(&note) {
                     book_userdata.notes.push(note);
                     state.ui_state.left_panel_state = PanelState::Notes;
 
