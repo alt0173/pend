@@ -13,7 +13,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
       ui.label("Library Path:");
       TextEdit::singleline(&mut state.library_path)
-        .hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
+        .hint_text(r"e.g. C:\Users\Public\Documents\MyBooks")
         .show(ui);
     });
 
