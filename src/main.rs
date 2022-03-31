@@ -8,7 +8,8 @@ use backend::{LocalBookInfo, PathGroup};
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
   epaint::{FontFamily, Rounding},
-  epi, run_native, NativeOptions,
+  epi::{self, IconData},
+  run_native, NativeOptions,
 };
 use egui::{vec2, Color32, Stroke};
 use egui_extras::RetainedImage;
@@ -77,7 +78,7 @@ impl epi::App for MyApp {
     _frame: &epi::Frame,
     _storage: Option<&dyn epi::Storage>,
   ) {
-    // Load memory
+    // Load memory (only in release mode)
     #[cfg(not(debug_assertions))]
     if let Some(storage) = _storage {
       *self = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
@@ -90,10 +91,6 @@ impl epi::App for MyApp {
         20.0,
         FontFamily::Proportional,
       )),
-      // text_styles: todo!(),
-      // wrap: todo!(),
-      // spacing: todo!(),
-      // interaction: todo!(),
       visuals: egui::Visuals {
         dark_mode: true,
         widgets: egui::style::Widgets {
@@ -137,24 +134,16 @@ impl epi::App for MyApp {
           bg_fill: Color32::from_rgb(72, 85, 137),
           stroke: Stroke::new(1.0, Color32::from_gray(220)),
         },
-        // hyperlink_color: todo!(),
         window_rounding: Rounding::from(5.0),
-        // window_shadow: todo!(),
         resize_corner_size: 8.0,
         ..egui::Visuals::default()
       },
-      // For debooging
+      // For debugging
       // debug: egui::style::DebugOptions {
       //   debug_on_hover: true,
       //   show_expand_width: true,
       //   show_expand_height: true,
       //   show_resize: true,
-      // },
-      // Add custom text styles here
-      // text_styles: {
-      //   let mut styles = egui::Style::default().text_styles;
-
-      //   styles
       // },
       ..egui::Style::default()
     });
@@ -234,11 +223,11 @@ impl epi::App for MyApp {
     epi::set_value(storage, epi::APP_KEY, self);
   }
 
-  // Name of the process
   fn name(&self) -> &str {
     "Pend"
   }
-  // Prevents single instance of un-layedout text
+
+  // Prevents single frame of un-layedout text
   fn warm_up_enabled(&self) -> bool {
     true
   }

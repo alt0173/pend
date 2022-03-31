@@ -17,8 +17,9 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       });
       ui.separator();
 
-      // Can't have mutable borrow && a mutable iter so a helper is needed
+      // Can't have mutable borrow while iterating w/ mutability so a helper is needed
       let mut to_delete = None;
+
       for (index, note) in notes.iter_mut().enumerate() {
         let (chapter, line, content) =
           (note.chapter, note.line, &mut note.content);

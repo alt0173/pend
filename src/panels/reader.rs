@@ -32,19 +32,18 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
       book_userdata.chapter += 1;
     }
 
-    // Skip to avoid trippled length
-    #[rustfmt::skip]
     ui.horizontal(|ui| {
       if state.ui_state.reader_focus_mode {
         // Collapse focus
-        if ui.add(egui::Button::new(RichText::new("Unfocus"))
-				).clicked() {
+        if ui
+          .add(egui::Button::new(RichText::new("Unfocus")))
+          .clicked()
+        {
           state.ui_state.reader_focus_mode = false;
         }
       } else {
         // Expand focus
-        if ui.add(egui::Button::new(RichText::new("Focus"))
-				).clicked() {
+        if ui.add(egui::Button::new(RichText::new("Focus"))).clicked() {
           state.ui_state.reader_focus_mode = true;
         }
 
@@ -159,7 +158,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                   .iter()
                   .enumerate()
                   {
-                    // Seperator placed after the first option to indicate
+                    // Separator placed after the first option to indicate
                     // the user's custom selected highlight color
                     if index == 1 {
                       ui.separator();
