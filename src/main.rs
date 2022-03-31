@@ -248,6 +248,11 @@ fn main() {
   let app = MyApp { ..MyApp::default() };
   let native_options = NativeOptions {
     min_window_size: Some(vec2(960.0, 540.0)),
+    icon_data: Some(IconData {
+      rgba: image::open("./compiletime_resources/pend.png").unwrap().into_bytes(),
+      width: 64,
+      height: 64,
+    }),
     ..eframe::NativeOptions::default()
   };
   run_native(Box::new(app), native_options)
