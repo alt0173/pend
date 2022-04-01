@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   panels::{config, notes, shelf},
   reader::right_panel_reader_ui,
-  MyApp,
+  Pend,
 };
 
 // Assorted colors for the (default) program theme
@@ -116,7 +116,7 @@ impl Default for DocumentColors {
   }
 }
 
-pub fn main(ctx: &Context, state: &mut MyApp) {
+pub fn main(ctx: &Context, state: &mut Pend) {
   egui::Area::new("Container").movable(false).show(ctx, |ui| {
     let area_width = ui.available_width();
 		let area_height = ui.available_height();

@@ -7,7 +7,7 @@ use crate::{
   ui::{BookTextStyle, DocumentColors},
 };
 
-pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
+pub fn ui(state: &mut crate::app::Pend, ui: &mut egui::Ui) {
   ui.collapsing("Program", |ui| {
     // Path to directory containing books
     ui.horizontal(|ui| {

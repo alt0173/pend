@@ -3,10 +3,10 @@ use egui::{Color32, FontId, Label, RichText, ScrollArea, Sense};
 use crate::{
   backend::{parse_calibre, FormattingInfo},
   ui::{Note, PanelState},
-  MyApp,
+  Pend,
 };
 
-pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
+pub fn right_panel_reader_ui(state: &mut Pend, ui: &mut egui::Ui) {
   // Displays page(s) of the book
   if let Some(book) = &mut state.selected_book {
     // If a book is loaded there will be a path, only panics if
