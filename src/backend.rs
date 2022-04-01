@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ui::Note, MyApp};
 
+/// Denotes type of formatting to be applied to a line group
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum FormattingInfo {
   Title,
@@ -18,10 +19,12 @@ pub enum FormattingInfo {
   Italic,
 }
 
-// Contains custom content a user creates for each book (notes, highlighted lines, etc.)
-#[derive(Serialize, Deserialize, Debug)]
+/// Contains custom content a user creates for each book (notes, highlighted lines, etc.)
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LocalBookInfo {
   pub notes: Vec<Note>,
+  /// Last page the user viewed
+  pub chapter: usize,
   /// (Chapter, Line), Color of the highlight
   pub highlights: HashMap<(usize, usize), Color32>,
   /// (Chapter, Line), info
@@ -32,17 +35,28 @@ impl LocalBookInfo {
   pub fn new() -> Self {
     Self {
       notes: Vec::new(),
+      chapter: 1,
       highlights: HashMap::new(),
       formatting_info: HashMap::new(),
     }
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RenameState {
+  Active,
+  Inactive,
+  Error,
+}
+
+/// Group of paths, with some metadata.
+///
+/// Note that when using `PartialEq`, only the `name` field is compared
 #[derive(Serialize, Deserialize, Clone, PartialOrd, Eq, Ord)]
 pub struct PathGroup {
   pub name: String,
   pub paths: Vec<PathBuf>,
-  pub renaming: bool,
+  pub renaming: RenameState,
   pub desired_name: String,
 }
 
@@ -57,7 +71,7 @@ impl PathGroup {
     Self {
       name: name.into(),
       paths: Vec::new(),
-      renaming: false,
+      renaming: RenameState::Inactive,
       desired_name: String::new(),
     }
   }
@@ -69,12 +83,13 @@ impl PathGroup {
     Self {
       name: name.into(),
       paths,
-      renaming: false,
+      renaming: RenameState::Inactive,
       desired_name: String::new(),
     }
   }
 }
 
+/// Turns calibre html into usable text / formatting info
 pub fn parse_calibre(
   input: &str,
   chapter: usize,
@@ -86,32 +101,42 @@ pub fn parse_calibre(
   for (line_number, line) in input.lines().enumerate() {
     let rx = Regex::new(r"<(.*?)>").unwrap();
 
-    // Processes the parsed HTML, (Using my custom, bad, parsing, which is very
-    // imperfect to say the least) and converts it into formatting info
-    for captures in rx.captures_iter(line) {
-      for capture in captures.iter().flatten() {
-        if let Some(format) = match capture.as_str() {
-          x if x.contains("title") => Some(FormattingInfo::Title),
-          x if x.contains('h') => Some(FormattingInfo::Heading),
-          x if x.contains("h2") => Some(FormattingInfo::Heading2),
-          x if x.contains("i") => Some(FormattingInfo::Italic),
-          x if x.contains("b") => Some(FormattingInfo::Bold),
-          _ => None,
-        } {
-          book_info
-            .formatting_info
-            .insert((chapter, line_number - lines_removed), format);
+    // Best I could come up with for handling breaks; improve this later
+    let line = line.replace("<br/>", "  [break]  ");
+    let processed = rx.replace_all(&line, "");
+    let processed_line = processed.trim();
+
+    // Processes the parsed HTML using my custom parsing (could be improved ;)
+    // and converts it into formatting info
+    if !processed_line.is_empty() {
+      for captures in rx.captures_iter(&line) {
+        for capture in captures.iter().flatten() {
+          if let Some(capture) = match capture.as_str() {
+            // Not (currently) implimented and/or explicitly nothing
+            // This avoids `<img` being read as `<i` for example
+            x if x.contains("<img") => None,
+            x if x.contains("<body") => None,
+            x if x.contains("<p>") => None,
+            // Working formatting
+            x if x.contains("<title") => Some(FormattingInfo::Title),
+            x if x.contains("<h1") => Some(FormattingInfo::Heading),
+            x if x.contains("<h2") => Some(FormattingInfo::Heading2),
+            x if x.contains("<i") => Some(FormattingInfo::Italic),
+            x if x.contains("<b") => Some(FormattingInfo::Bold),
+            _ => None,
+          } {
+            book_info
+              .formatting_info
+              .insert((chapter, line_number - lines_removed), capture);
+          }
         }
       }
     }
 
-    let processed = rx.replace_all(line, "");
-    let processed = processed.trim();
-
-    if processed.is_empty() {
+    if processed_line.is_empty() {
       lines_removed += 1;
     } else {
-      output.push_str(processed);
+      output.push_str(processed_line);
       output.push('\n');
     }
   }

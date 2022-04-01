@@ -13,7 +13,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
       ui.label("Library Path:");
       TextEdit::singleline(&mut state.library_path)
-        .hint_text(r"e.g. C:\Users\Public\Documents\Lisci")
+        .hint_text(r"e.g. C:\Users\Public\Documents\MyBooks")
         .show(ui);
     });
 
@@ -33,7 +33,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       ui.label("Shelf Book Size: ");
       ui.add(
         egui::Slider::new(&mut state.book_cover_width_multiplier, 0.5..=2.0)
-          .step_by(0.25),
+          .step_by(0.1),
       );
     });
   });
@@ -106,7 +106,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       if ui.button("Reset Style").clicked() {
         state.book_style = BookTextStyle::default();
       }
-      if ui.button("Clear Highlights").clicked() {
+      if ui.button("Clear Selected Book Highlights").clicked() {
         if let Some(path) = &state.selected_book_path {
           state
             .book_userdata
@@ -123,6 +123,10 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     if ui.button("Acknowledgements").clicked() {
       state.ui_state.display_ofl_popup = true;
     }
-    // ui.checkbox(&mut state.ui_state.display_raw_text, "[DEBUG] Display Raw Text");
+    #[cfg(debug_assertions)]
+    ui.checkbox(
+      &mut state.ui_state.display_raw_text,
+      "[DEBUG] Display Raw Text",
+    );
   });
 }

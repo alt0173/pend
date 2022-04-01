@@ -8,14 +8,18 @@ use backend::{LocalBookInfo, PathGroup};
 use eframe::{
   egui::{self, style::WidgetVisuals, FontDefinitions},
   epaint::{FontFamily, Rounding},
-  epi, run_native, NativeOptions,
+  epi::{self, IconData},
+  run_native, NativeOptions,
 };
-use egui::vec2;
+use egui::{vec2, Color32, Stroke};
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
-use ui::{BookTextStyle, DocumentColors, Note, PanelState, UIState};
+use ui::{
+  BookTextStyle, DocumentColors, Note, PanelState, UIState, BLUISH,
+  DARKISH_BLUISH, DARK_BLUISH, LIGHTISH_BLUISH, LIGHT_BLUISH,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct MyApp {
@@ -30,7 +34,6 @@ pub struct MyApp {
   #[serde(skip_deserializing)]
   selected_book: Option<EpubDoc<File>>,
   selected_book_path: Option<PathBuf>,
-  chapter_number: usize,
   book_style: BookTextStyle,
   book_userdata: HashMap<PathBuf, LocalBookInfo>,
   goto_target: Option<Note>,
@@ -38,7 +41,7 @@ pub struct MyApp {
   book_cover_width_multiplier: f32,
   /// Path, original shelf name, title
   dragged_book: Option<(PathBuf, String, String)>,
-  shelf_reorganize_mode: bool,
+  reorganizing_shelf: bool,
 }
 
 impl Default for MyApp {
@@ -57,14 +60,13 @@ impl Default for MyApp {
       book_covers: HashMap::new(),
       selected_book: None,
       selected_book_path: None,
-      chapter_number: 0,
       book_style: BookTextStyle::default(),
       book_userdata: HashMap::new(),
       goto_target: None,
       theme: DocumentColors::default(),
       book_cover_width_multiplier: 1.0,
       dragged_book: None,
-      shelf_reorganize_mode: false,
+      reorganizing_shelf: false,
     }
   }
 }
@@ -76,7 +78,7 @@ impl epi::App for MyApp {
     _frame: &epi::Frame,
     _storage: Option<&dyn epi::Storage>,
   ) {
-    // Load memory
+    // Load memory (only in release mode)
     #[cfg(not(debug_assertions))]
     if let Some(storage) = _storage {
       *self = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
@@ -89,41 +91,54 @@ impl epi::App for MyApp {
         20.0,
         FontFamily::Proportional,
       )),
-      // text_styles: todo!(),
-      // wrap: todo!(),
-      // spacing: todo!(),
-      // interaction: todo!(),
       visuals: egui::Visuals {
         dark_mode: true,
         widgets: egui::style::Widgets {
           noninteractive: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.noninteractive
+            bg_fill: DARK_BLUISH,
+            bg_stroke: Stroke::new(2.5, DARKISH_BLUISH),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(180)),
+            rounding: Rounding::same(1.5),
+            expansion: 0.0,
           },
           inactive: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.inactive
+            bg_fill: BLUISH,
+            bg_stroke: Stroke::new(2.0, LIGHTISH_BLUISH),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(200)),
+            rounding: Rounding::same(1.5),
+            expansion: 0.0,
           },
           hovered: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.hovered
+            bg_fill: LIGHTISH_BLUISH,
+            bg_stroke: Stroke::new(2.0, LIGHT_BLUISH),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(220)),
+            rounding: Rounding::same(1.5),
+            expansion: 1.0,
           },
           active: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.active
+            bg_fill: LIGHTISH_BLUISH,
+            bg_stroke: Stroke::new(2.0, LIGHT_BLUISH),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(220)),
+            rounding: Rounding::same(1.5),
+            expansion: 1.0,
           },
           open: WidgetVisuals {
-            rounding: Rounding::from(1.5),
-            ..ctx.style().visuals.widgets.open
+            bg_fill: DARK_BLUISH,
+            bg_stroke: Stroke::new(2.5, DARKISH_BLUISH),
+            fg_stroke: Stroke::new(1.0, Color32::from_gray(200)),
+            rounding: Rounding::same(1.5),
+            expansion: 0.0,
           },
         },
-        // selection: todo!(),
-        // hyperlink_color: todo!(),
+        selection: egui::style::Selection {
+          bg_fill: Color32::from_rgb(72, 85, 137),
+          stroke: Stroke::new(1.0, Color32::from_gray(220)),
+        },
         window_rounding: Rounding::from(5.0),
-        // window_shadow: todo!(),
         resize_corner_size: 8.0,
         ..egui::Visuals::default()
       },
+      // For debugging
       // debug: egui::style::DebugOptions {
       //   debug_on_hover: true,
       //   show_expand_width: true,
@@ -137,16 +152,23 @@ impl epi::App for MyApp {
     let mut fonts = FontDefinitions::default();
 
     fonts.font_data.insert(
-      "work_sans".into(),
+      "work_sans_medium".to_string(),
       egui::FontData::from_static(include_bytes!(
         "../compiletime_resources/WorkSans-Medium.ttf"
       )),
     );
 
     fonts.font_data.insert(
-      "merriweather_regular".into(),
+      "merriweather_regular".to_string(),
       egui::FontData::from_static(include_bytes!(
         "../compiletime_resources/Merriweather-Regular.ttf"
+      )),
+    );
+
+    fonts.font_data.insert(
+      "noto_mono_regular".to_string(),
+      egui::FontData::from_static(include_bytes!(
+        "../compiletime_resources/NotoSansMono-Regular.ttf"
       )),
     );
 
@@ -154,7 +176,7 @@ impl epi::App for MyApp {
       .families
       .entry(eframe::epaint::FontFamily::Proportional)
       .or_default()
-      .insert(0, "work_sans".into());
+      .insert(0, "work_sans_medium".into());
 
     fonts
       .families
@@ -162,9 +184,15 @@ impl epi::App for MyApp {
       .or_default()
       .insert(0, "merriweather_regular".into());
 
+    fonts
+      .families
+      .entry(FontFamily::Monospace)
+      .or_default()
+      .insert(0, "noto_mono_regular".into());
+
     ctx.set_fonts(fonts);
 
-    // Some fields of the program state do not support (de)serialization, so they must be rebuilt manually
+    // Some fields of the state do not support (de)serialization, so they must be rebuilt manually
     // Loads selected book
     if let Some(path) = &self.selected_book_path {
       if let Ok(doc) = EpubDoc::new(path) {
@@ -195,11 +223,11 @@ impl epi::App for MyApp {
     epi::set_value(storage, epi::APP_KEY, self);
   }
 
-  // Name of the process
   fn name(&self) -> &str {
-    "Swag book reading software beta 0.1"
+    "Pend"
   }
-  // Prevents single instance of un-layedout text
+
+  // Prevents single frame of un-layedout text
   fn warm_up_enabled(&self) -> bool {
     true
   }
@@ -209,6 +237,11 @@ fn main() {
   let app = MyApp { ..MyApp::default() };
   let native_options = NativeOptions {
     min_window_size: Some(vec2(960.0, 540.0)),
+    icon_data: Some(IconData {
+      rgba: include_bytes!("../compiletime_resources/pend.png").to_vec(),
+      width: 64,
+      height: 64,
+    }),
     ..eframe::NativeOptions::default()
   };
   run_native(Box::new(app), native_options)

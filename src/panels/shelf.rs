@@ -1,7 +1,7 @@
-use egui::{vec2, Button, RichText, TextEdit};
+use egui::{vec2, Align2, RichText, TextEdit};
 use epub::doc::EpubDoc;
 
-use crate::backend::{load_library, PathGroup};
+use crate::backend::{load_library, PathGroup, RenameState};
 
 pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
   // Top menu bar
@@ -21,14 +21,19 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
 
       ui.with_layout(egui::Layout::right_to_left(), |ui| {
         if ui
-          .button(if state.shelf_reorganize_mode {
-            "\u{1F513}"
-          } else {
-            "\u{1F512}"
-          })
+          .button(
+            RichText::new(if state.reorganizing_shelf {
+              // Open lock
+              "\u{1F513}"
+            } else {
+              // Closed lock
+              "\u{1F512}"
+            })
+            .monospace(),
+          )
           .clicked()
         {
-          state.shelf_reorganize_mode ^= true;
+          state.reorganizing_shelf ^= true;
         }
       });
     }
@@ -37,6 +42,41 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
 
   // Loop over all shelves
   for (shelf_index, path_group) in state.shelves.clone().iter().enumerate() {
+    // Renaming window
+    if path_group.renaming != RenameState::Inactive {
+      egui::Window::new("Rename Shelf")
+        .auto_sized()
+        .anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0))
+        .show(ui.ctx(), |ui| {
+          let shelf_names = state.shelves.clone();
+          let mut shelf_names = shelf_names.iter();
+          let shelf = &mut state.shelves[shelf_index];
+
+          // The textedit
+          TextEdit::singleline(&mut shelf.desired_name)
+            .hint_text("Type Name Here...")
+            .show(ui);
+
+          if shelf.name == shelf.desired_name {
+            if ui.ctx().input().key_pressed(egui::Key::Enter) {
+              shelf.renaming = RenameState::Inactive;
+            }
+          } else if shelf.desired_name.chars().count() > 32
+            || shelf_names.any(|x| x.name == shelf.desired_name.to_lowercase())
+          {
+            ui.label("Invalid name");
+          } else if ui.ctx().input().key_pressed(egui::Key::Enter) {
+            shelf.name = shelf.desired_name.clone();
+            shelf.renaming = RenameState::Inactive;
+          }
+
+          if ui.ctx().input().key_pressed(egui::Key::Escape) {
+            shelf.renaming = RenameState::Inactive;
+          }
+        });
+    }
+
+    // The collapsing header / section
     let collapsing_response = ui.collapsing(path_group.name.clone(), |ui| {
       egui::Grid::new(&path_group.name).show(ui, |ui| {
         // Loop over all paths within a shelf and show the books
@@ -50,7 +90,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
               .mdata("creator")
               .unwrap_or_else(|| "<Missing Title>".to_string());
 
-            // If searching: only show items beind searched for
+            // Only show items being searched for
             if title
               .to_lowercase()
               .contains(&state.shelf_search.to_lowercase())
@@ -62,7 +102,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                 // This is very important to ensure everything disaplys sanely
                 ui.set_max_width(140.0 * state.book_cover_width_multiplier);
 
-                // Cover image button thing
+                // The button / image of the book's cover
                 let cover_response = ui.add(
                   egui::ImageButton::new(
                     state
@@ -90,7 +130,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                     .size(140.0 * state.book_cover_width_multiplier / 10.0),
                 );
 
-                if state.shelf_reorganize_mode {
+                if state.reorganizing_shelf {
                   // Set dragged book when dragged
                   if cover_response.drag_started() {
                     state.dragged_book =
@@ -107,7 +147,9 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                     state.dragged_book.as_ref(),
                     ui.ctx().input().pointer.any_released(),
                   ) {
-                    if cover_response.rect.contains(mouse_position) {
+                    if cover_response.rect.contains(mouse_position)
+                      && path != dragged_path
+                    {
                       // Find the shelf the dragged book's path is in and remove the path from it
                       state
                         .shelves
@@ -118,9 +160,15 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                         .retain(|p| p != dragged_path);
 
                       // Add path to shelf after this book
-                      state.shelves[shelf_index]
-                        .paths
-                        .insert(path_index + 1, dragged_path.clone());
+                      if path_index >= state.shelves[shelf_index].paths.len() {
+                        state.shelves[shelf_index]
+                          .paths
+                          .push(dragged_path.clone());
+                      } else {
+                        state.shelves[shelf_index]
+                          .paths
+                          .insert(path_index, dragged_path.clone());
+                      }
 
                       state.dragged_book = None;
                     }
@@ -130,18 +178,26 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                   if cover_response.clicked() {
                     state.selected_book = Some(EpubDoc::new(path).unwrap());
                     state.selected_book_path = Some(path.clone());
-                    state.chapter_number = 1;
                   }
                 }
 
                 // Context menu
-                cover_response.context_menu(|ui| {
-                  if ui.button("Remove").clicked() {
-                    state.shelves[shelf_index].paths.retain(|p| p != path);
-                    ui.close_menu();
-                  }
-                });
+                if !state.reorganizing_shelf {
+                  cover_response.context_menu(|ui| {
+                    if ui.button("Remove").clicked() {
+                      state.shelves[shelf_index].paths.retain(|p| p != path);
+                      ui.close_menu();
+                    }
+                  });
+                }
               });
+            }
+
+            if (path_index + 1)
+              % (5.0 / state.book_cover_width_multiplier).round() as usize
+              == 0
+            {
+              ui.end_row();
             }
           }
         }
@@ -149,18 +205,35 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
     });
 
     // Shelf context menu
-    collapsing_response.header_response.context_menu(|ui| {
-      if ui
-        .add_enabled(state.shelves.len() > 1, Button::new("Remove"))
-        .clicked()
-      {
-        for path in &state.shelves[shelf_index].paths.clone() {
-          state.shelves[shelf_index - 1].paths.push(path.clone());
+    if path_group.renaming == RenameState::Inactive {
+      collapsing_response.header_response.context_menu(|ui| {
+        if ui.button("Rename").clicked() {
+          state.shelves[shelf_index].renaming = RenameState::Active;
+          state.shelves[shelf_index].desired_name = path_group.name.clone();
+          ui.close_menu();
         }
 
-        state.shelves.remove(shelf_index);
-      };
-    });
+        // Only allows the shelf to be deleted if there is >1 other shelves
+        ui.set_enabled(state.shelves.len() > 1);
+        ui.menu_button("Remove Shelf", |ui| {
+          if ui.button("Confirm").clicked() {
+            for path in &state.shelves[shelf_index].paths.clone() {
+              if shelf_index == 0 {
+                state.shelves[1].paths.push(path.clone());
+              } else {
+                state.shelves[shelf_index - 1].paths.push(path.clone());
+              }
+            }
+
+            state.shelves.remove(shelf_index);
+          };
+
+          if ui.button("Cancel").clicked() {
+            ui.close_menu();
+          };
+        });
+      });
+    }
   }
 
   // Shelf addition
