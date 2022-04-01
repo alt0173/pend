@@ -192,6 +192,13 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
                 }
               });
             }
+
+            if (path_index + 1)
+              % (5.0 / state.book_cover_width_multiplier).round() as usize
+              == 0
+            {
+              ui.end_row();
+            }
           }
         }
       });
