@@ -7,7 +7,7 @@ use glob::glob;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::{ui::Note, MyApp};
+use crate::{ui::Note, Pend};
 
 /// Denotes type of formatting to be applied to a line group
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -144,7 +144,7 @@ pub fn parse_calibre(
   output
 }
 
-pub fn load_library(state: &mut MyApp) {
+pub fn load_library(state: &mut Pend) {
   // Finds all epub files in the user's library directory
   for file_path in glob(&format!("{}/**/*.epub", state.library_path))
     .unwrap()

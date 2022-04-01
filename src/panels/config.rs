@@ -7,7 +7,7 @@ use crate::{
   ui::{BookTextStyle, DocumentColors},
 };
 
-pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
+pub fn ui(state: &mut crate::app::Pend, ui: &mut egui::Ui) {
   ui.collapsing("Program", |ui| {
     // Path to directory containing books
     ui.horizontal(|ui| {
@@ -128,5 +128,6 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       &mut state.ui_state.display_raw_text,
       "[DEBUG] Display Raw Text",
     );
+    ui.label("Version 1.0.0")
   });
 }

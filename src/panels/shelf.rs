@@ -3,7 +3,7 @@ use epub::doc::EpubDoc;
 
 use crate::backend::{load_library, PathGroup, RenameState};
 
-pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
+pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
   // Top menu bar
   ui.horizontal(|ui| {
     if state.shelves.is_empty() {
