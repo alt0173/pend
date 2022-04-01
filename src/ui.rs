@@ -90,7 +90,7 @@ impl Ord for Note {
 }
 
 impl Note {
-  pub fn new(chapter: u16, line: u16) -> Self {
+  pub const fn new(chapter: u16, line: u16) -> Self {
     Self {
       chapter,
       line,
@@ -182,14 +182,16 @@ pub fn main(ctx: &Context, state: &mut MyApp) {
 							"Shelf",
 						);
 
-						ui.set_enabled(state.selected_book.is_some());
-						ui.selectable_value(
-							&mut state.ui_state.left_panel_state,
-							PanelState::Notes,
-							"Notes",
-						);
+						// Vertical UI for the sole purpose of containing the enable
+						ui.vertical(|ui| {
+							ui.set_enabled(state.selected_book.is_some());
+							ui.selectable_value(
+								&mut state.ui_state.left_panel_state,
+								PanelState::Notes,
+								"Notes",
+							);
+						});
 
-						ui.set_enabled(true);
 						ui.with_layout(egui::Layout::right_to_left(), |ui| {
 							ui.selectable_value(
 								&mut state.ui_state.left_panel_state,
@@ -210,8 +212,8 @@ pub fn main(ctx: &Context, state: &mut MyApp) {
 						PanelState::Notes => {
 							notes::ui(state, ui);
 						}
-						_ => {
-							panic!("Error: Invalid Panel Selected");
+						PanelState::Reader => {
+							ui.label("Invalid Panel");
 						}
 					}
 

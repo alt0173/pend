@@ -33,7 +33,7 @@ pub fn ui(state: &mut crate::MyApp, ui: &mut egui::Ui) {
       ui.label("Shelf Book Size: ");
       ui.add(
         egui::Slider::new(&mut state.book_cover_width_multiplier, 0.5..=2.0)
-          .step_by(0.25),
+          .step_by(0.1),
       );
     });
   });

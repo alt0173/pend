@@ -9,8 +9,8 @@ use crate::{
 pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
   // Displays page(s) of the book
   if let Some(book) = &mut state.selected_book {
-    // If a book is loaded there must be a path, only panics if
-    // unexpected unloading occurs
+    // If a book is loaded there will be a path, only panics if
+    // unexpected unloading of that path occurs
     let selected_book_path = state.selected_book_path.as_ref().unwrap();
 
     let book_userdata =
@@ -47,10 +47,18 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
           state.ui_state.reader_focus_mode = true;
         }
 
-        // Display chapter number
-        ui.with_layout(egui::Layout::right_to_left(), |ui| {
-          ui.label(format!("Chapter: {}", &book_userdata.chapter));
-        });
+        ui.separator();
+
+        ui.label(format!("Chapter: {}", &book_userdata.chapter));
+
+        ui.spacing_mut().slider_width = ui.available_width();
+        ui.add(
+          egui::Slider::new(
+            &mut book_userdata.chapter,
+            1..=book.get_num_pages() - 1,
+          )
+          .show_value(false),
+        );
       }
     });
 
@@ -100,14 +108,10 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                   let mut text = RichText::new(line)
                     .color(theme.text_color)
                     .background_color(
-                      if let Some(color) = book_userdata
+                      book_userdata
                         .highlights
                         .get(&(book_userdata.chapter, line_number))
-                      {
-                        *color
-                      } else {
-                        Color32::TRANSPARENT
-                      },
+                        .map_or(Color32::TRANSPARENT, |color| *color),
                     )
                     .font(font_id.clone());
 
@@ -125,9 +129,6 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                       }
                       FormattingInfo::Heading2 => {
                         text = text.size(font_id.size * 1.25);
-                      }
-                      FormattingInfo::Break => {
-                        // TODO: Add some sort of newline / break here
                       }
                       FormattingInfo::Bold => text = text.strong(),
                       FormattingInfo::Italic => text = text.italics(),
@@ -172,7 +173,7 @@ pub fn right_panel_reader_ui(state: &mut MyApp, ui: &mut egui::Ui) {
                       )
                       .clicked()
                     {
-                      let coord = (book_userdata.chapter.clone(), line_number);
+                      let coord = (book_userdata.chapter, line_number);
 
                       if let Some(existing_color) =
                         book_userdata.highlights.get_mut(&coord)

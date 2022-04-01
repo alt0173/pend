@@ -17,7 +17,6 @@ pub enum FormattingInfo {
   Heading2,
   Bold,
   Italic,
-  Break,
 }
 
 /// Contains custom content a user creates for each book (notes, highlighted lines, etc.)
@@ -90,6 +89,7 @@ impl PathGroup {
   }
 }
 
+/// Turns calibre html into usable text / formatting info
 pub fn parse_calibre(
   input: &str,
   chapter: usize,
@@ -101,16 +101,18 @@ pub fn parse_calibre(
   for (line_number, line) in input.lines().enumerate() {
     let rx = Regex::new(r"<(.*?)>").unwrap();
 
-    let processed = rx.replace_all(line, "");
-    let processed = processed.trim();
+    // Best I could come up with for handling breaks; improve this later
+    let line = line.replace("<br/>", "  [break]  ");
+    let processed = rx.replace_all(&line, "");
+    let processed_line = processed.trim();
 
-    // Processes the parsed HTML, (Using my custom, bad, parsing, which is very
-    // imperfect to say the least) and converts it into formatting info
-    if !processed.is_empty() {
-      for captures in rx.captures_iter(line) {
+    // Processes the parsed HTML using my custom parsing (could be improved ;)
+    // and converts it into formatting info
+    if !processed_line.is_empty() {
+      for captures in rx.captures_iter(&line) {
         for capture in captures.iter().flatten() {
           if let Some(capture) = match capture.as_str() {
-            // Not currently implimented, but explicitly nothing
+            // Not (currently) implimented and/or explicitly nothing
             // This avoids `<img` being read as `<i` for example
             x if x.contains("<img") => None,
             x if x.contains("<body") => None,
@@ -120,12 +122,9 @@ pub fn parse_calibre(
             x if x.contains("<h1") => Some(FormattingInfo::Heading),
             x if x.contains("<h2") => Some(FormattingInfo::Heading2),
             x if x.contains("<i") => Some(FormattingInfo::Italic),
-            x if x.contains("<br") => Some(FormattingInfo::Break),
             x if x.contains("<b") => Some(FormattingInfo::Bold),
             _ => None,
           } {
-            // println!("{:?}, {}", capture, &line_number - &lines_removed);
-            // println!("{}", &line);
             book_info
               .formatting_info
               .insert((chapter, line_number - lines_removed), capture);
@@ -134,10 +133,10 @@ pub fn parse_calibre(
       }
     }
 
-    if processed.is_empty() {
+    if processed_line.is_empty() {
       lines_removed += 1;
     } else {
-      output.push_str(processed);
+      output.push_str(processed_line);
       output.push('\n');
     }
   }
