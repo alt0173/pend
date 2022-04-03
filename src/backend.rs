@@ -167,7 +167,10 @@ pub fn load_library(state: &mut Pend) {
       state.shelves.push(PathGroup::new("Books"));
     }
 
-    // Add file to library if not already added
+    let mut epub = EpubDoc::new(&file_path).unwrap();
+    let title = epub.mdata("title").unwrap();
+
+    // Add file path to library if not already added
     if !state
       .shelves
       .iter()
@@ -175,13 +178,14 @@ pub fn load_library(state: &mut Pend) {
       .any(|x| x == file_path)
     {
       state.shelves[0].paths.push(file_path.clone());
+      state
+        .epub_cache
+        .insert(file_path.clone(), EpubDoc::new(&file_path).unwrap());
     }
-    // Same thing for the book cover
-    let mut doc = EpubDoc::new(&file_path).unwrap();
-    let title = doc.mdata("title").unwrap();
 
-    if doc.get_cover().is_ok() {
-      let cover = doc.get_cover().unwrap();
+    // Add book cover to cache of book covers
+    if epub.get_cover().is_ok() {
+      let cover = epub.get_cover().unwrap();
       let cover = RetainedImage::from_image_bytes(&title, &cover).unwrap();
 
       state.book_covers.insert(title, cover);
