@@ -1,5 +1,4 @@
 use egui::{vec2, Align2, RichText, TextEdit};
-use epub::doc::EpubDoc;
 
 use crate::backend::{load_library, PathGroup, RenameState};
 
@@ -82,11 +81,11 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
         // Loop over all paths within a shelf and show the books
         for (path_index, path) in path_group.paths.iter().enumerate() {
           // Ensure the path leads to a valid epub document
-          if let Ok(doc) = EpubDoc::new(path) {
-            let title = doc
+          if let Some(epub) = state.epub_cache.get(path) {
+            let title = epub
               .mdata("title")
               .unwrap_or_else(|| "<Missing Title>".to_string());
-            let author = doc
+            let author = epub
               .mdata("creator")
               .unwrap_or_else(|| "<Missing Title>".to_string());
 
@@ -176,7 +175,6 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                 } else {
                   // Select book on click
                   if cover_response.clicked() {
-                    state.selected_book = Some(EpubDoc::new(path).unwrap());
                     state.selected_book_path = Some(path.clone());
                   }
                 }

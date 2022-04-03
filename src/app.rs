@@ -23,13 +23,13 @@ pub struct Pend {
   pub ui_state: UIState,
   pub library_path: String,
   pub shelves: Vec<PathGroup>,
+  #[serde(skip_serializing)]
+  #[serde(skip_deserializing)]
+  pub epub_cache: HashMap<PathBuf, EpubDoc<File>>,
   pub shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
   pub book_covers: HashMap<String, RetainedImage>,
-  #[serde(skip_serializing)]
-  #[serde(skip_deserializing)]
-  pub selected_book: Option<EpubDoc<File>>,
   pub selected_book_path: Option<PathBuf>,
   pub book_style: BookTextStyle,
   pub book_userdata: HashMap<PathBuf, LocalBookInfo>,
@@ -53,9 +53,9 @@ impl Default for Pend {
       },
       library_path: "./library".into(),
       shelves: Vec::new(),
+      epub_cache: HashMap::new(),
       shelf_search: String::new(),
       book_covers: HashMap::new(),
-      selected_book: None,
       selected_book_path: None,
       book_style: BookTextStyle::default(),
       book_userdata: HashMap::new(),
@@ -189,12 +189,24 @@ impl epi::App for Pend {
 
     ctx.set_fonts(fonts);
 
-    // Some fields of the state do not support (de)serialization, so they must be rebuilt manually
-    // Loads selected book
-    if let Some(path) = &self.selected_book_path {
-      if let Ok(doc) = EpubDoc::new(path) {
-        self.selected_book = Some(doc);
-      };
+    if self
+      .shelves
+      .iter()
+      .flat_map(|f| f.paths.clone())
+      .collect::<Vec<PathBuf>>()
+      .len()
+      > 0
+    {
+      for path in self
+        .shelves
+        .iter()
+        .flat_map(|f| f.paths.clone())
+        .collect::<Vec<PathBuf>>()
+      {
+        self
+          .epub_cache
+          .insert(path.clone(), EpubDoc::new(path).unwrap());
+      }
     }
 
     // Loads book covers
