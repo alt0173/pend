@@ -2,9 +2,9 @@
 
 Pend is a program for reading EPUB files.
 
-# Preview Images
+# Preview Image(s)
 
-Coming soon™
+![Example Image](./example.png)
 
 # Installation
 
