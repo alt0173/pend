@@ -6,7 +6,8 @@ authors = ["Alt0173 <four@aaathats3as.com>"]
 license = "MIT OR Apache-2.0"
 readme = "readme.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 eframe = "0.17.0"
@@ -14,9 +15,13 @@ egui = {version = "0.17.0", features = ["serialize"]}
 egui_extras = { version = "0.17.0", features = ["image"]} # Nicer image handling
 image = { version = "0.24.1", features = ["jpeg"]} # Loading images
 glob = "0.3.0" # Search for files
-epub = "1.2.3" # Deal with epubs
+epub = {git = "https://github.com/danigm/epub-rs"} # Deal with epubs
 regex = "1.5.4" # Parsing of HTML from epubs
 serde = { version = "1.0.136", features = ["derive"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.6"
+tracing-wasm = "0.2"
 
 [features]
 default = ["eframe/persistence"]

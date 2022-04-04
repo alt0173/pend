@@ -1,4 +1,3 @@
-pub use crate::panels::reader;
 use crate::ui::{
   BookTextStyle, DocumentColors, Note, PanelState, UIState, BLUISH,
   DARKISH_BLUISH, DARK_BLUISH, LIGHTISH_BLUISH, LIGHT_BLUISH,
@@ -12,10 +11,11 @@ use eframe::{
   epaint::{FontFamily, Rounding},
   epi,
 };
-use egui::{Color32, Stroke};
+use egui::{Color32, Stroke, Vec2, vec2};
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
+use std::io::BufReader;
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 
 #[derive(Serialize, Deserialize)]
@@ -25,7 +25,7 @@ pub struct Pend {
   pub shelves: Vec<PathGroup>,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
-  pub epub_cache: HashMap<PathBuf, EpubDoc<File>>,
+  pub epub_cache: HashMap<PathBuf, EpubDoc<BufReader<File>>>,
   pub shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
@@ -240,4 +240,11 @@ impl epi::App for Pend {
   fn warm_up_enabled(&self) -> bool {
     true
   }
+
+	// Controls the maximum size of the web canvas
+	// This may cause serious performance issues on Linux / MacOS
+	// Set it to something smaller (ie. 1280x1280 to mitigate)
+	fn max_size_points(&self) -> Vec2 {
+		vec2(4096.0, 2160.0)
+	}
 }

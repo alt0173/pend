@@ -8,8 +8,7 @@ use egui::FontFamily;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  panels::{config, notes, shelf},
-  reader::right_panel_reader_ui,
+  panels::{config, notes, reader, shelf},
   Pend,
 };
 
@@ -223,7 +222,7 @@ pub fn main(ctx: &Context, state: &mut Pend) {
 
     egui::CentralPanel::default().show(ctx, |ui| {
       if state.ui_state.right_panel_state == PanelState::Reader {
-				right_panel_reader_ui(state, ui);
+				reader::right_panel_reader_ui(state, ui);
       } else {
         todo!()
       }
