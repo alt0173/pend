@@ -17,6 +17,7 @@ use egui::{vec2, Color32, Stroke, Vec2};
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::io::Cursor;
 use std::{collections::HashMap, sync::Arc};
 
@@ -194,6 +195,13 @@ impl epi::App for Pend {
     // Load local book directory (only in native && release mode)
     #[cfg(all(not(debug_assertions), not(target_arch = "wasm32")))]
     load_directory(self, self.library_path.clone());
+
+    #[cfg(target_arch = "wasm32")]
+    {
+      self.shelves.clear();
+      self.book_userdata.clear();
+      self.book_covers.clear();
+    }
   }
 
   fn update(&mut self, ctx: &egui::Context, _frame: &epi::Frame) {
@@ -218,5 +226,19 @@ impl epi::App for Pend {
   // Set it to something smaller (ie. 1280x1280 to mitigate)
   fn max_size_points(&self) -> Vec2 {
     vec2(f32::MAX, f32::MAX)
+  }
+}
+
+impl Pend {
+  pub fn remove_book<U: Into<String> + Display>(&mut self, uuid: U) {
+    let uuid = uuid.to_string();
+    // Remove actual epub
+    self.epub_cache.retain(|u, _| *u != uuid);
+    // Remove uuid from shelves
+    for shelf in self.shelves.iter_mut() {
+      shelf.uuids.retain(|u| *u != uuid);
+    }
+    // Remove cover
+    self.book_covers.remove(&uuid);
   }
 }

@@ -16,7 +16,7 @@ Building Pend is simple & easy. You should be able to build and run Pend on Wind
 1. Obtain a copy of Pend's github repository (via `git clone` or the `Code` button)
 2. Navigate inside the downloaded folder
 3. Run the command `cargo build --release`
-4. Navigate to the `./target/release` folder to find a binary file (e.g. `pend.exe` on windows), which you can move / rename as you wish.
+4. Navigate to the `./target/release` folder to find an executable file (e.g. `pend.exe` on windows), which you can move / rename as you wish.
 
 # Support / bugs
 
