@@ -1,6 +1,6 @@
 # Pend
 
-Pend is a program for reading EPUB files.
+Pend is a program for reading EPUB files. Check out the [web demo](https://alt0173.github.io/pend/)!
 
 # Preview Image(s)
 

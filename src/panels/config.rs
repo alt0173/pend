@@ -10,11 +10,16 @@ use crate::{
 pub fn ui(state: &mut crate::app::Pend, ui: &mut egui::Ui) {
   ui.collapsing("Program", |ui| {
     // Path to directory containing books
+    #[cfg(not(target_arch = "wasm32"))]
     ui.horizontal(|ui| {
       ui.label("Library Path:");
       TextEdit::singleline(&mut state.library_path)
         .hint_text(r"e.g. C:\Users\Public\Documents\MyBooks")
-        .show(ui);
+        .show(ui)
+        .response
+        .on_hover_text_at_pointer(
+          "Pend will automatically load all epubs from this folder on startup.",
+        );
     });
 
     if ui.button("Force Load Library").clicked() {
