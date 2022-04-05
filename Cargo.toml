@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 eframe = "0.17.0"
 egui = {version = "0.17.0", features = ["serialize"]}
 egui_extras = { version = "0.17.0", features = ["image"]} # Nicer image handling
-image = { version = "0.24.1", features = ["jpeg"]} # Loading images
+image = { version = "0.24.1", default-features = false,  features = ["jpeg", "png"]} # Loading images
 glob = "0.3.0" # Search for files
 epub = {git = "https://github.com/danigm/epub-rs"} # Deal with epubs
 regex = "1.5.4" # Parsing of HTML from epubs

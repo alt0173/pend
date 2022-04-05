@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, fmt::Display, fs, io::Cursor};
 
 use egui::Color32;
 use egui_extras::RetainedImage;
@@ -32,7 +32,8 @@ pub struct LocalBookInfo {
 }
 
 impl LocalBookInfo {
-  pub fn new() -> Self {
+	#[must_use]
+  pub fn default() -> Self {
     Self {
       notes: Vec::new(),
       chapter: 1,
@@ -49,28 +50,30 @@ pub enum RenameState {
   Error,
 }
 
-/// Group of paths, with some metadata.
+/// Group of books uuids for lookup, with some metadata.
 ///
 /// Note that when using `PartialEq`, only the `name` field is compared
 #[derive(Serialize, Deserialize, Clone, PartialOrd, Eq, Ord)]
-pub struct PathGroup {
+pub struct Shelf {
   pub name: String,
-  pub paths: Vec<PathBuf>,
+  // Unique identifiers of epubs in this group,
+  // used to look them up in the cache
+  pub uuids: Vec<String>,
   pub renaming: RenameState,
   pub desired_name: String,
 }
 
-impl PartialEq for PathGroup {
+impl PartialEq for Shelf {
   fn eq(&self, other: &Self) -> bool {
     self.name == other.name
   }
 }
 
-impl PathGroup {
+impl Shelf {
   pub fn new<S: Into<String>>(name: S) -> Self {
     Self {
       name: name.into(),
-      paths: Vec::new(),
+      uuids: Vec::new(),
       renaming: RenameState::Inactive,
       desired_name: String::new(),
     }
@@ -78,11 +81,11 @@ impl PathGroup {
 
   pub fn new_with_contents<S: Into<String>>(
     name: S,
-    paths: Vec<PathBuf>,
+    uuids: Vec<String>,
   ) -> Self {
     Self {
       name: name.into(),
-      paths,
+      uuids,
       renaming: RenameState::Inactive,
       desired_name: String::new(),
     }
@@ -144,57 +147,65 @@ pub fn parse_calibre(
   output
 }
 
-pub fn load_library(state: &mut Pend) {
+/// Loads all epubs in a given directory (and all subfolders)
+pub fn load_directory<P: Into<String> + Display>(
+  state: &mut Pend,
+  directory: P,
+) {
   // Finds all epub files in the user's library directory
-  for file_path in glob(&format!("{}/**/*.epub", state.library_path))
-    .unwrap()
-    .flatten()
+  for file_path in glob(&format!("{}/**/*.epub", directory)).unwrap().flatten()
   {
-    // Fallback image
-    if !state.book_covers.contains_key("fallback") {
-      state.book_covers.insert(
-        "fallback".to_string(),
-        RetainedImage::from_image_bytes(
-          "fallback",
-          include_bytes!("../compiletime_resources/fallback.png"),
-        )
-        .unwrap(),
-      );
-    }
+    let epub =
+      EpubDoc::from_reader(Cursor::new(fs::read(file_path).unwrap())).unwrap();
 
-    // Create a default "folder" / PathGroup if one is not already present
-    if state.shelves.is_empty() {
-      state.shelves.push(PathGroup::new("Books"));
-    }
-
-    let mut epub = EpubDoc::new(&file_path).unwrap();
-    let title = epub.mdata("title").unwrap();
-
-    // Add file path to library if not already added
-    if !state
-      .shelves
-      .iter()
-      .flat_map(|g| g.paths.clone())
-      .any(|x| x == file_path)
-    {
-      state.shelves[0].paths.push(file_path.clone());
-      state
-        .epub_cache
-        .insert(file_path.clone(), EpubDoc::new(&file_path).unwrap());
-    }
-
-    // Add book cover to cache of book covers
-    if epub.get_cover().is_ok() {
-      let cover = epub.get_cover().unwrap();
-      let cover = RetainedImage::from_image_bytes(&title, &cover).unwrap();
-
-      state.book_covers.insert(title, cover);
-    }
-
-    // If the book in question does not have userdata already: create some
-    state
-      .book_userdata
-      .entry(file_path)
-      .or_insert_with(LocalBookInfo::new);
+    register_epub(state, epub);
   }
+}
+
+/// Performs the neccesary steps to load an epub into the program and set up
+/// metadata / cover / etc
+pub fn register_epub(state: &mut Pend, mut epub: EpubDoc<Cursor<Vec<u8>>>) {
+  let uuid = epub.unique_identifier.as_ref().unwrap().clone();
+
+  // Fallback image
+  if !state.book_covers.contains_key("fallback") {
+    state.book_covers.insert(
+      "fallback".to_string(),
+      RetainedImage::from_image_bytes(
+        "fallback",
+        include_bytes!("../compiletime_resources/fallback.png"),
+      )
+      .unwrap(),
+    );
+  }
+
+  // Create a default "folder" / PathGroup if one is not already present
+  if state.shelves.is_empty() {
+    state.shelves.push(Shelf::new("Books"));
+  }
+
+  // Add book cover to cache of book covers
+  if let Ok(cover) = epub.get_cover() {
+    state.book_covers.entry(uuid.clone()).or_insert_with(|| {
+      RetainedImage::from_image_bytes(&uuid, &cover).unwrap()
+    });
+  }
+
+  // Add file uuid to library if not already added
+  if !state
+    .shelves
+    .iter()
+    .flat_map(|g| g.uuids.clone())
+    .any(|x| x == uuid)
+  {
+    state.shelves[0].uuids.push(uuid.clone());
+
+    state.epub_cache.insert(uuid.clone(), epub);
+  }
+
+  // If the book in question does not have userdata already: create an empty
+  state
+    .book_userdata
+    .entry(uuid)
+    .or_insert_with(|| LocalBookInfo::default());
 }

@@ -1,19 +1,19 @@
-use std::io::{BufReader, Cursor};
+use std::io::Cursor;
 
-use crate::backend::{load_library, PathGroup, RenameState};
+use crate::backend::{load_directory, register_epub, RenameState, Shelf};
 use egui::{vec2, Align2, RichText, TextEdit};
 use epub::doc::EpubDoc;
 
 pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
   for file in &ui.ctx().input().raw.dropped_files {
+    // Loading epubs for da web
     if let Some(bytes) = &file.bytes {
       let bytes = bytes.to_vec();
       let bytes_cursor = Cursor::new(bytes);
-      let bytes_reader = BufReader::new(bytes_cursor);
 
-      if let Ok(epub) = EpubDoc::from_reader(bytes_reader) {
-				state.web_loaded_book = Some(epub);
-			};
+      if let Ok(epub) = EpubDoc::from_reader(bytes_cursor) {
+        register_epub(state, epub);
+      };
     }
   }
 
@@ -21,7 +21,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
   ui.horizontal(|ui| {
     if state.shelves.is_empty() {
       if ui.button("Load Library").clicked() {
-        load_library(state);
+        load_directory(state, state.library_path.clone());
       }
 
       TextEdit::singleline(&mut state.library_path)
@@ -93,9 +93,9 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
     let collapsing_response = ui.collapsing(path_group.name.clone(), |ui| {
       egui::Grid::new(&path_group.name).show(ui, |ui| {
         // Loop over all paths within a shelf and show the books
-        for (path_index, path) in path_group.paths.iter().enumerate() {
+        for (uuid_index, uuid) in path_group.uuids.iter().enumerate() {
           // Ensure the path leads to a valid epub document
-          if let Some(epub) = state.epub_cache.get(path) {
+          if let Some(epub) = state.epub_cache.get(uuid) {
             let title = epub
               .mdata("title")
               .unwrap_or_else(|| "<Missing Title>".to_string());
@@ -120,7 +120,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                   egui::ImageButton::new(
                     state
                       .book_covers
-                      .get(&title)
+                      .get(uuid)
                       .unwrap_or_else(|| {
                         state.book_covers.get("fallback").unwrap()
                       })
@@ -147,13 +147,13 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                   // Set dragged book when dragged
                   if cover_response.drag_started() {
                     state.dragged_book =
-                      Some((path.clone(), title, path_group.name.clone()));
+                      Some((uuid.clone(), title, path_group.name.clone()));
                   }
 
                   // Drag & Drop
                   if let (
                     Some(mouse_position),
-                    Some((dragged_path, _dragged_title, old_shelf_name)),
+                    Some((dragged_uuid, _dragged_title, old_shelf_name)),
                     true,
                   ) = (
                     ui.ctx().pointer_hover_pos(),
@@ -161,7 +161,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                     ui.ctx().input().pointer.any_released(),
                   ) {
                     if cover_response.rect.contains(mouse_position)
-                      && path != dragged_path
+                      && uuid != dragged_uuid
                     {
                       // Find the shelf the dragged book's path is in and remove the path from it
                       state
@@ -169,18 +169,18 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                         .iter_mut()
                         .find(|s| s.name == *old_shelf_name)
                         .unwrap()
-                        .paths
-                        .retain(|p| p != dragged_path);
+                        .uuids
+                        .retain(|p| p != dragged_uuid);
 
                       // Add path to shelf after this book
-                      if path_index >= state.shelves[shelf_index].paths.len() {
+                      if uuid_index >= state.shelves[shelf_index].uuids.len() {
                         state.shelves[shelf_index]
-                          .paths
-                          .push(dragged_path.clone());
+                          .uuids
+                          .push(dragged_uuid.clone());
                       } else {
                         state.shelves[shelf_index]
-                          .paths
-                          .insert(path_index, dragged_path.clone());
+                          .uuids
+                          .insert(uuid_index, dragged_uuid.clone());
                       }
 
                       state.dragged_book = None;
@@ -189,7 +189,8 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                 } else {
                   // Select book on click
                   if cover_response.clicked() {
-                    state.selected_book_path = Some(path.clone());
+                    state.selected_book_uuid =
+                      Some(epub.unique_identifier.as_ref().unwrap().clone());
                   }
                 }
 
@@ -197,7 +198,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                 if !state.reorganizing_shelf {
                   cover_response.context_menu(|ui| {
                     if ui.button("Remove").clicked() {
-                      state.shelves[shelf_index].paths.retain(|p| p != path);
+                      state.shelves[shelf_index].uuids.retain(|p| p != uuid);
                       ui.close_menu();
                     }
                   });
@@ -205,7 +206,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
               });
             }
 
-            if (path_index + 1)
+            if (uuid_index + 1)
               % (5.0 / state.book_cover_width_multiplier).round() as usize
               == 0
             {
@@ -229,11 +230,11 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
         ui.set_enabled(state.shelves.len() > 1);
         ui.menu_button("Remove Shelf", |ui| {
           if ui.button("Confirm").clicked() {
-            for path in &state.shelves[shelf_index].paths.clone() {
+            for path in &state.shelves[shelf_index].uuids.clone() {
               if shelf_index == 0 {
-                state.shelves[1].paths.push(path.clone());
+                state.shelves[1].uuids.push(path.clone());
               } else {
-                state.shelves[shelf_index - 1].paths.push(path.clone());
+                state.shelves[shelf_index - 1].uuids.push(path.clone());
               }
             }
 
@@ -250,19 +251,19 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
 
   // Shelf addition
   if let Some(mouse_position) = ui.ctx().pointer_hover_pos() {
-    if let Some((path, _, old_shelf_name)) = &state.dragged_book {
+    if let Some((uuid, _, old_shelf_name)) = &state.dragged_book {
       ui.centered_and_justified(|ui| {
         if ui.button("New Shelf").rect.contains(mouse_position)
           && ui.ctx().input().pointer.any_released()
         {
-          // Find the shelf the dragged book's path is in and remove the path from it
+          // Find the shelf the dragged book's uuid is in and remove the uuid
           state
             .shelves
             .iter_mut()
             .find(|s| s.name == *old_shelf_name)
             .unwrap()
-            .paths
-            .retain(|p| p != path);
+            .uuids
+            .retain(|u| u != uuid);
           // Create new shelf
           // Ensure that the name of the new PathGroup will be unique
           let mut shelf_number: u16 = 1;
@@ -270,14 +271,14 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
 
           // PathGroup comparrision works soley on name, so it's easy to
           // search for potential name collisions
-          while state.shelves.contains(&PathGroup::new(&shelf_name)) {
+          while state.shelves.contains(&Shelf::new(&shelf_name)) {
             shelf_name = format!("Shelf {}", shelf_number);
             shelf_number += 1;
           }
 
           // Create shelf with name, add book to it, and push it
           let shelf =
-            PathGroup::new_with_contents(shelf_name, Vec::from([path.clone()]));
+            Shelf::new_with_contents(shelf_name, Vec::from([uuid.clone()]));
           state.shelves.push(shelf);
         };
       });

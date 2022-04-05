@@ -89,6 +89,7 @@ impl Ord for Note {
 }
 
 impl Note {
+	#[must_use]
   pub const fn new(chapter: u16, line: u16) -> Self {
     Self {
       chapter,
@@ -169,7 +170,7 @@ pub fn main(ctx: &Context, state: &mut Pend) {
   	}
 
 		// Panels
-		if !state.ui_state.reader_focus_mode || state.selected_book_path.is_none() {
+		if !state.ui_state.reader_focus_mode || state.selected_book_uuid.is_none() {
 			egui::SidePanel::left("Left Panel")
 				.resizable(true)
 				.width_range(area_width / 3.0..=area_width / 1.5)
@@ -183,7 +184,7 @@ pub fn main(ctx: &Context, state: &mut Pend) {
 
 						// Vertical UI for the sole purpose of containing the enable
 						ui.vertical(|ui| {
-							ui.set_enabled(state.selected_book_path.is_some());
+							ui.set_enabled(state.selected_book_uuid.is_some());
 							ui.selectable_value(
 								&mut state.ui_state.left_panel_state,
 								PanelState::Notes,
@@ -223,8 +224,6 @@ pub fn main(ctx: &Context, state: &mut Pend) {
     egui::CentralPanel::default().show(ctx, |ui| {
       if state.ui_state.right_panel_state == PanelState::Reader {
 				reader::right_panel_reader_ui(state, ui);
-      } else {
-        todo!()
       }
     });
   });

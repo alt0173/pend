@@ -3,7 +3,7 @@ use std::sync::Arc;
 use egui::{ComboBox, FontFamily, TextEdit};
 
 use crate::{
-  backend::load_library,
+  backend::load_directory,
   ui::{BookTextStyle, DocumentColors},
 };
 
@@ -18,12 +18,12 @@ pub fn ui(state: &mut crate::app::Pend, ui: &mut egui::Ui) {
     });
 
     if ui.button("Force Load Library").clicked() {
-      load_library(state);
+      load_directory(state, state.library_path.clone());
     }
     if ui.button("Force Clear Library").clicked() {
       state.shelves.clear();
       state.book_covers.clear();
-      state.selected_book_path = None;
+      state.selected_book_uuid = None;
     }
 
     ui.checkbox(&mut state.ui_state.reader_focus_mode, "Focus Mode");
@@ -106,7 +106,7 @@ pub fn ui(state: &mut crate::app::Pend, ui: &mut egui::Ui) {
         state.book_style = BookTextStyle::default();
       }
       if ui.button("Clear Selected Book Highlights").clicked() {
-        if let Some(path) = &state.selected_book_path {
+        if let Some(path) = &state.selected_book_uuid {
           state
             .book_userdata
             .get_mut(path)

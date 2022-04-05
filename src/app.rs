@@ -1,9 +1,11 @@
+#[cfg(all(not(debug_assertions), not(target_arch = "wasm32")))]
+use crate::backend::load_directory;
 use crate::ui::{
   BookTextStyle, DocumentColors, Note, PanelState, UIState, BLUISH,
   DARKISH_BLUISH, DARK_BLUISH, LIGHTISH_BLUISH, LIGHT_BLUISH,
 };
 use crate::{
-  backend::{LocalBookInfo, PathGroup},
+  backend::{LocalBookInfo, Shelf},
   ui,
 };
 use eframe::{
@@ -15,32 +17,29 @@ use egui::{vec2, Color32, Stroke, Vec2};
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
-use std::io::{BufReader, Cursor};
-use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
+use std::io::Cursor;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Serialize, Deserialize)]
 pub struct Pend {
   pub ui_state: UIState,
   pub library_path: String,
-  pub shelves: Vec<PathGroup>,
+  pub shelves: Vec<Shelf>,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
-  pub epub_cache: HashMap<PathBuf, EpubDoc<BufReader<File>>>,
-	#[serde(skip_serializing)]
-  #[serde(skip_deserializing)]
-	pub web_loaded_book: Option<EpubDoc<BufReader<Cursor<Vec<u8>>>>>,
+  pub epub_cache: HashMap<String, EpubDoc<Cursor<Vec<u8>>>>,
   pub shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
   pub book_covers: HashMap<String, RetainedImage>,
-  pub selected_book_path: Option<PathBuf>,
+  pub selected_book_uuid: Option<String>,
   pub book_style: BookTextStyle,
-  pub book_userdata: HashMap<PathBuf, LocalBookInfo>,
+  pub book_userdata: HashMap<String, LocalBookInfo>,
   pub goto_target: Option<Note>,
   pub theme: DocumentColors,
   pub book_cover_width_multiplier: f32,
-  /// Path, original shelf name, title
-  pub dragged_book: Option<(PathBuf, String, String)>,
+  /// UUID original shelf name, title
+  pub dragged_book: Option<(String, String, String)>,
   pub reorganizing_shelf: bool,
 }
 
@@ -57,10 +56,9 @@ impl Default for Pend {
       library_path: "./library".into(),
       shelves: Vec::new(),
       epub_cache: HashMap::new(),
-			web_loaded_book: None,
       shelf_search: String::new(),
       book_covers: HashMap::new(),
-      selected_book_path: None,
+      selected_book_uuid: None,
       book_style: BookTextStyle::default(),
       book_userdata: HashMap::new(),
       goto_target: None,
@@ -193,39 +191,9 @@ impl epi::App for Pend {
 
     ctx.set_fonts(fonts);
 
-    if self
-      .shelves
-      .iter()
-      .flat_map(|f| f.paths.clone())
-      .collect::<Vec<PathBuf>>()
-      .len()
-      > 0
-    {
-      for path in self
-        .shelves
-        .iter()
-        .flat_map(|f| f.paths.clone())
-        .collect::<Vec<PathBuf>>()
-      {
-        self
-          .epub_cache
-          .insert(path.clone(), EpubDoc::new(path).unwrap());
-      }
-    }
-
-    // Loads book covers
-    for path in self.shelves.iter().flat_map(|g| &g.paths) {
-      if let Ok(mut doc) = EpubDoc::new(path) {
-        let title = doc.mdata("title").unwrap();
-
-        if doc.get_cover().is_ok() {
-          let cover = doc.get_cover().unwrap();
-          let cover = RetainedImage::from_image_bytes(&title, &cover).unwrap();
-
-          self.book_covers.insert(title, cover);
-        }
-      }
-    }
+    // Load local book directory (only in native && release mode)
+    #[cfg(all(not(debug_assertions), not(target_arch = "wasm32")))]
+    load_directory(self, self.library_path.clone());
   }
 
   fn update(&mut self, ctx: &egui::Context, _frame: &epi::Frame) {
