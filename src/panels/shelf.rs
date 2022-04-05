@@ -28,10 +28,11 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
   // Top menu bar
   ui.horizontal(|ui| {
     if state.shelves.is_empty() {
+      #[cfg(not(target_arch = "wasm32"))]
       if ui.button("Load Library").clicked() {
         load_directory(state, state.library_path.clone());
       }
-
+      #[cfg(not(target_arch = "wasm32"))]
       TextEdit::singleline(&mut state.library_path)
         .hint_text("Path to books...")
         .show(ui);
@@ -60,6 +61,12 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
     }
   });
   ui.separator();
+
+  if state.shelves.is_empty() {
+    ui.vertical_centered(|ui| {
+      ui.label(RichText::new("Drag & drop an epub here!").size(32.0));
+    });
+  }
 
   // Loop over all shelves
   for (shelf_index, path_group) in state.shelves.clone().iter().enumerate() {
