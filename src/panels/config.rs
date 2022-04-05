@@ -132,6 +132,6 @@ pub fn ui(state: &mut crate::app::Pend, ui: &mut egui::Ui) {
       &mut state.ui_state.display_raw_text,
       "[DEBUG] Display Raw Text",
     );
-    ui.label("Version 1.0.0")
+    ui.label("Version 1.1.0")
   });
 }
