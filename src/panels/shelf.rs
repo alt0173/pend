@@ -1,8 +1,22 @@
-use egui::{vec2, Align2, RichText, TextEdit};
+use std::io::{BufReader, Cursor};
 
 use crate::backend::{load_library, PathGroup, RenameState};
+use egui::{vec2, Align2, RichText, TextEdit};
+use epub::doc::EpubDoc;
 
 pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
+  for file in &ui.ctx().input().raw.dropped_files {
+    if let Some(bytes) = &file.bytes {
+      let bytes = bytes.to_vec();
+      let bytes_cursor = Cursor::new(bytes);
+      let bytes_reader = BufReader::new(bytes_cursor);
+
+      if let Ok(epub) = EpubDoc::from_reader(bytes_reader) {
+				state.web_loaded_book = Some(epub);
+			};
+    }
+  }
+
   // Top menu bar
   ui.horizontal(|ui| {
     if state.shelves.is_empty() {

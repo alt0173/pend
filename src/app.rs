@@ -15,7 +15,7 @@ use egui::{vec2, Color32, Stroke, Vec2};
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
-use std::io::BufReader;
+use std::io::{BufReader, Cursor};
 use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 
 #[derive(Serialize, Deserialize)]
@@ -26,6 +26,9 @@ pub struct Pend {
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
   pub epub_cache: HashMap<PathBuf, EpubDoc<BufReader<File>>>,
+	#[serde(skip_serializing)]
+  #[serde(skip_deserializing)]
+	pub web_loaded_book: Option<EpubDoc<BufReader<Cursor<Vec<u8>>>>>,
   pub shelf_search: String,
   #[serde(skip_serializing)]
   #[serde(skip_deserializing)]
@@ -54,6 +57,7 @@ impl Default for Pend {
       library_path: "./library".into(),
       shelves: Vec::new(),
       epub_cache: HashMap::new(),
+			web_loaded_book: None,
       shelf_search: String::new(),
       book_covers: HashMap::new(),
       selected_book_path: None,
