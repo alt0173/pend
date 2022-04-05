@@ -8,11 +8,11 @@ use crate::{
 
 pub fn right_panel_reader_ui(state: &mut Pend, ui: &mut egui::Ui) {
   // Displays page(s) of the book
-  if let Some(selected_book_path) = &state.selected_book_path {
+  if let Some(selected_book_path) = &state.selected_book_uuid {
     if let Some(book) = &mut state.epub_cache.get_mut(selected_book_path) {
       // If a book is loaded there will be a path, only panics if
       // unexpected unloading of that path occurs
-      let selected_book_path = state.selected_book_path.as_ref().unwrap();
+      let selected_book_path = state.selected_book_uuid.as_ref().unwrap();
 
       let book_userdata =
         state.book_userdata.get_mut(selected_book_path).unwrap();

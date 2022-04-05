@@ -1,17 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // Hide console window on Windows in release
 
-mod app;
-mod backend;
-mod panels;
-pub use crate::panels::reader;
-mod ui;
-
-use app::Pend;
 use eframe::{egui, epi::IconData, run_native, NativeOptions};
 use egui::vec2;
+use pend::app::Pend;
 
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
-  let app = Pend { ..Pend::default() };
+  let app = Pend::default();
   let native_options = NativeOptions {
     min_window_size: Some(vec2(960.0, 540.0)),
     icon_data: Some(IconData {

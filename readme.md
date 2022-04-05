@@ -8,7 +8,9 @@ Pend is a program for reading EPUB files.
 
 # Installation
 
-Building Pend is simple & easy. You should be able to build and run Pend on Windows, Linux, and MacOS without issue.
+Building Pend is simple & easy. You should be able to build and run Pend on Windows, Linux, MacOS, and WASM without issue.
+
+## Building natively.
 
 0. install [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 1. Obtain a copy of Pend's github repository (via `git clone` or the `Code` button)
