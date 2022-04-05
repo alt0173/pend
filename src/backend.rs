@@ -32,7 +32,7 @@ pub struct LocalBookInfo {
 }
 
 impl LocalBookInfo {
-	#[must_use]
+  #[must_use]
   pub fn default() -> Self {
     Self {
       notes: Vec::new(),
@@ -167,7 +167,7 @@ pub fn load_directory<P: Into<String> + Display>(
 pub fn register_epub(state: &mut Pend, mut epub: EpubDoc<Cursor<Vec<u8>>>) {
   let uuid = epub.unique_identifier.as_ref().unwrap().clone();
 
-  // Fallback image
+  // Fallback image (if not already present)
   if !state.book_covers.contains_key("fallback") {
     state.book_covers.insert(
       "fallback".to_string(),

@@ -9,6 +9,7 @@ fn main() {
   let app = Pend::default();
   let native_options = NativeOptions {
     min_window_size: Some(vec2(960.0, 540.0)),
+    drag_and_drop_support: true,
     icon_data: Some(IconData {
       rgba: image::load_from_memory(include_bytes!(
         "../compiletime_resources/pend.png"

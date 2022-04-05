@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{fs, io::Cursor};
 
 use crate::backend::{load_directory, register_epub, RenameState, Shelf};
 use egui::{vec2, Align2, RichText, TextEdit};
@@ -6,14 +6,22 @@ use epub::doc::EpubDoc;
 
 pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
   for file in &ui.ctx().input().raw.dropped_files {
-    // Loading epubs for da web
+    // Loading epubs for the WASM version
     if let Some(bytes) = &file.bytes {
       let bytes = bytes.to_vec();
       let bytes_cursor = Cursor::new(bytes);
 
       if let Ok(epub) = EpubDoc::from_reader(bytes_cursor) {
+        state.selected_book_uuid = epub.unique_identifier.clone();
         register_epub(state, epub);
       };
+    // Loading files for the native version
+    } else if let Some(path) = &file.path {
+      if let Ok(epub) =
+        EpubDoc::from_reader(Cursor::new(fs::read(path).unwrap()))
+      {
+        register_epub(state, epub);
+      }
     }
   }
 
@@ -163,7 +171,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                     if cover_response.rect.contains(mouse_position)
                       && uuid != dragged_uuid
                     {
-                      // Find the shelf the dragged book's path is in and remove the path from it
+                      // Find the shelf the dragged book's uuid is in and remove the uuid from it
                       state
                         .shelves
                         .iter_mut()
@@ -172,7 +180,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                         .uuids
                         .retain(|p| p != dragged_uuid);
 
-                      // Add path to shelf after this book
+                      // Add uuid to shelf after this book
                       if uuid_index >= state.shelves[shelf_index].uuids.len() {
                         state.shelves[shelf_index]
                           .uuids
@@ -189,8 +197,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                 } else {
                   // Select book on click
                   if cover_response.clicked() {
-                    state.selected_book_uuid =
-                      Some(epub.unique_identifier.as_ref().unwrap().clone());
+                    state.selected_book_uuid = Some(uuid.clone());
                   }
                 }
 
@@ -198,7 +205,7 @@ pub fn ui(state: &mut crate::Pend, ui: &mut egui::Ui) {
                 if !state.reorganizing_shelf {
                   cover_response.context_menu(|ui| {
                     if ui.button("Remove").clicked() {
-                      state.shelves[shelf_index].uuids.retain(|p| p != uuid);
+                      state.remove_book(uuid);
                       ui.close_menu();
                     }
                   });
