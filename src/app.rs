@@ -11,7 +11,7 @@ use eframe::{
   epaint::{FontFamily, Rounding},
   epi,
 };
-use egui::{Color32, Stroke, Vec2, vec2};
+use egui::{vec2, Color32, Stroke, Vec2};
 use egui_extras::RetainedImage;
 use epub::doc::EpubDoc;
 use serde::{Deserialize, Serialize};
@@ -241,10 +241,10 @@ impl epi::App for Pend {
     true
   }
 
-	// Controls the maximum size of the web canvas
-	// This may cause serious performance issues on Linux / MacOS
-	// Set it to something smaller (ie. 1280x1280 to mitigate)
-	fn max_size_points(&self) -> Vec2 {
-		vec2(4096.0, 2160.0)
-	}
+  // Controls the maximum size of the web canvas
+  // This may cause serious performance issues on Linux / MacOS
+  // Set it to something smaller (ie. 1280x1280 to mitigate)
+  fn max_size_points(&self) -> Vec2 {
+    vec2(f32::MAX, f32::MAX)
+  }
 }
